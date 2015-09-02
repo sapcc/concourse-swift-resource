@@ -1,0 +1,23 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/hashicorp/go-version",
+			"repository": "https://github.com/hashicorp/go-version",
+			"revision": "999359b6b7a041ce16e695d51e92145b83f01087",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mitchellh/colorstring",
+			"repository": "https://github.com/mitchellh/colorstring",
+			"revision": "61164e49940b423ba1f12ddbdf01632ac793e5e9",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/ncw/swift",
+			"repository": "https://github.com/ncw/swift",
+			"revision": "ca8cbbde50d4e12dd8ad70b1bd66589ae98efc5c",
+			"branch": "master"
+		}
+	]
+}
