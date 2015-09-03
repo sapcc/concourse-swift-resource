@@ -24,8 +24,8 @@ type outParams struct {
 }
 
 type outResponse struct {
-	Version  string     `json:"source"`
-	Metadata []Metadata `json:"metadata"`
+	Version  resource.Version `json:"version"`
+	Metadata []Metadata       `json:"metadata"`
 }
 
 type Metadata struct {
@@ -102,7 +102,7 @@ func main() {
 	file.Close()
 
 	response := outResponse{
-		Version: filename,
+		Version: resource.Version{Path: filename},
 		Metadata: []Metadata{
 			Metadata{
 				Name:  "Version",

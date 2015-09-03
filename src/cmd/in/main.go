@@ -12,13 +12,13 @@ import (
 )
 
 type inRequest struct {
-	Resource resource.Source `json:"source"`
-	Version  string          `json:"version"`
+	Resource resource.Source  `json:"source"`
+	Version  resource.Version `json:"version"`
 }
 
 type inResponse struct {
-	Version  string     `json:"source"`
-	Metadata []Metadata `json:"metadata"`
+	Version  resource.Version `json:"version"`
+	Metadata []Metadata       `json:"metadata"`
 }
 
 type Metadata struct {
@@ -45,11 +45,12 @@ func main() {
 		resource.Fatal("Error parsing regular expression", err)
 	}
 
-	filename := request.Version
+	filename := request.Version.Path
 
-	ver, ok := versions.Parse(request.Version, regex)
+	ver, ok := versions.Parse(filename, regex)
+
 	if !ok {
-		resource.Sayf("Can't extract version from %s", filename)
+		resource.Sayf("Can't extract version from %#v\n", filename)
 		os.Exit(1)
 	}
 
@@ -63,7 +64,7 @@ func main() {
 	if err != nil {
 		resource.Fatal("Can't open file", err)
 	}
-	headers, err := client.ObjectGet(rsc.Container, request.Version, file, true, swift.Headers{})
+	headers, err := client.ObjectGet(rsc.Container, filename, file, true, swift.Headers{})
 	file.Close()
 	if err != nil {
 		resource.Fatal("Failed to fetch object", err)
@@ -78,7 +79,7 @@ func main() {
 	}
 
 	response := inResponse{
-		Version: filename,
+		Version: resource.Version{Path: filename},
 		Metadata: []Metadata{
 			Metadata{
 				Name:  "Version",

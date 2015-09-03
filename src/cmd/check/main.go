@@ -10,8 +10,8 @@ import (
 )
 
 type checkRequest struct {
-	Resource resource.Source `json:"source"`
-	Version  string          `json:"version"`
+	Resource resource.Source  `json:"source"`
+	Version  resource.Version `json:"version"`
 }
 
 func main() {
@@ -36,19 +36,19 @@ func main() {
 	if err != nil {
 		resource.Fatal("Error", err)
 	}
-	response := []string{}
+	response := []resource.Version{}
 	if len(extractions) > 0 {
-		if request.Version == "" {
-			response = append(response, extractions[len(extractions)-1].Path)
+		if request.Version.Path == "" {
+			response = append(response, resource.Version{Path: extractions[len(extractions)-1].Path})
 		} else {
 
-			lastVersion, ok := versions.Parse(request.Version, regex)
+			lastVersion, ok := versions.Parse(request.Version.Path, regex)
 			if !ok {
-				resource.Fatal("Invalid version", fmt.Errorf("Can't parse %s", request.Version))
+				resource.Fatal("Invalid version", fmt.Errorf("Can't parse %s", request.Version.Path))
 			}
 			for _, extraction := range extractions {
 				if extraction.Version.GreaterThan(lastVersion.Version) {
-					response = append(response, extraction.Path)
+					response = append(response, resource.Version{Path: extraction.Path})
 				}
 			}
 		}

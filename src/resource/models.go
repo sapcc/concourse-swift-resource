@@ -10,3 +10,7 @@ type Source struct {
 	Container string `json:"container"`
 	Regex     string `json:"regex"`
 }
+
+type Version struct {
+	Path string `json:"path,omitempty"`
+}
