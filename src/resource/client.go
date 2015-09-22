@@ -7,8 +7,9 @@ func NewClient(source Source) *swift.Connection {
 		UserName: source.Username,
 		ApiKey:   source.ApiKey,
 		AuthUrl:  source.AuthUrl,
-		Domain:   source.Domain, // Name of the domain (v3 auth only)
-		//Tenant:   "tenant", // Name of the tenant (v2 auth only)
+		Domain:   source.Domain,   // Name of the domain (v3 auth only)
+		Tenant:   source.Tenant,   // Name of the tenant
+		TenantId: source.TenantId, // Id of the tenant
 	}
 
 	err := c.Authenticate()

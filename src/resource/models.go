@@ -6,6 +6,7 @@ type Source struct {
 	AuthUrl  string `json:"auth_url"`
 	Domain   string `json:"domain"`
 	Tenant   string `json:"tenant"`
+	TenantId string `json:"tenant_id"`
 
 	Container string `json:"container"`
 	Regex     string `json:"regex"`
