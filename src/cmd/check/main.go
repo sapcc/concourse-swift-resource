@@ -27,6 +27,7 @@ func main() {
 	}
 
 	client := resource.NewClient(rsc)
+	defer resource.CacheClientToken(client)
 	names, err := client.ObjectNamesAll(rsc.Container, nil)
 	//names := []string{"file-3.0", "file-2.1", "file-2.3"}
 	if err != nil {
