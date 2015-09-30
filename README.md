@@ -15,6 +15,8 @@ This resource is heavily inspired by the the [offical S3 resource](https://githu
 
 * `domain`: *Required.* The domain of the user (V3) 
 
+* `tenant_id`: *Optional.* The project id
+
 * `auth_url`: *Required.* The url for authentication (Keystone) 
 
 * `regex`: *.* The pattern to match filenames against. The first

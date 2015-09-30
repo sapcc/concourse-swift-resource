@@ -18,6 +18,7 @@ func NewClient(source Source) *swift.Connection {
 		Domain:   source.Domain,   // Name of the domain (v3 auth only)
 		Tenant:   source.Tenant,   // Name of the tenant
 		TenantId: source.TenantId, // Id of the tenant
+		Retries:  1,
 	}
 
 	if _, err := os.Stat(tokenCacheFile); err == nil {
