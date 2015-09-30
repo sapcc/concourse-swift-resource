@@ -2,8 +2,10 @@ package resource
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 
 	"github.com/ncw/swift"
 )
@@ -12,13 +14,14 @@ var tokenCacheFile = "/tmp/token.cache"
 
 func NewClient(source Source) *swift.Connection {
 	c := swift.Connection{
-		UserName: source.Username,
-		ApiKey:   source.ApiKey,
-		AuthUrl:  source.AuthUrl,
-		Domain:   source.Domain,   // Name of the domain (v3 auth only)
-		Tenant:   source.Tenant,   // Name of the tenant
-		TenantId: source.TenantId, // Id of the tenant
-		Retries:  1,
+		UserName:  source.Username,
+		ApiKey:    source.ApiKey,
+		AuthUrl:   source.AuthUrl,
+		Domain:    source.Domain,   // Name of the domain (v3 auth only)
+		Tenant:    source.Tenant,   // Name of the tenant
+		TenantId:  source.TenantId, // Id of the tenant
+		Retries:   1,
+		UserAgent: fmt.Sprintf("%s (concourse swift resource; %s; container: %s)", swift.DefaultUserAgent, path.Base(os.Args[0]), source.Container),
 	}
 
 	if _, err := os.Stat(tokenCacheFile); err == nil {
