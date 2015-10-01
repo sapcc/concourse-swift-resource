@@ -16,7 +16,7 @@
 		{
 			"importpath": "github.com/ncw/swift",
 			"repository": "https://github.com/ncw/swift",
-			"revision": "ca8cbbde50d4e12dd8ad70b1bd66589ae98efc5c",
+			"revision": "958ad62bfb2b21a988034c9c54467ce88103e255",
 			"branch": "master"
 		}
 	]
