@@ -2,13 +2,10 @@ package versions
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"sort"
 
 	version "github.com/hashicorp/go-version"
-
-	"resource"
 )
 
 type Extractions []Extraction
@@ -43,7 +40,7 @@ func Parse(filename string, pattern *regexp.Regexp) (Extraction, bool) {
 	}
 	ver, err := version.NewVersion(matches[1])
 	if err != nil {
-		resource.Fatal("Error", fmt.Errorf("Invalid version %s", matches[1]))
+		return Extraction{}, false
 	}
 	return Extraction{
 		Path:          filename,

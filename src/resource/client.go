@@ -11,23 +11,27 @@ import (
 )
 
 var tokenCacheFile = "/tmp/token.cache"
+var cacheToken = false
 
 func NewClient(source Source) *swift.Connection {
 	c := swift.Connection{
 		UserName:  source.Username,
-		ApiKey:    source.ApiKey,
-		AuthUrl:   source.AuthUrl,
+		ApiKey:    source.APIKey,
+		AuthUrl:   source.AuthURL,
 		Domain:    source.Domain,   // Name of the domain (v3 auth only)
 		Tenant:    source.Tenant,   // Name of the tenant
-		TenantId:  source.TenantId, // Id of the tenant
+		TenantId:  source.TenantID, // Id of the tenant
 		Retries:   1,
 		UserAgent: fmt.Sprintf("%s (concourse swift resource; %s; container: %s)", swift.DefaultUserAgent, path.Base(os.Args[0]), source.Container),
 	}
+	if !cacheToken {
+		return &c
+	}
 
 	if _, err := os.Stat(tokenCacheFile); err == nil {
-		if cachedJson, err := ioutil.ReadFile(tokenCacheFile); err == nil {
+		if cachedJSON, err := ioutil.ReadFile(tokenCacheFile); err == nil {
 			var cc swift.Connection
-			if err := json.Unmarshal(cachedJson, &cc); err == nil {
+			if err := json.Unmarshal(cachedJSON, &cc); err == nil {
 				if cc.UserName == cc.UserName &&
 					c.ApiKey == cc.ApiKey &&
 					c.AuthUrl == cc.AuthUrl &&
@@ -52,11 +56,11 @@ func CacheClientToken(c *swift.Connection) {
 	if !c.Authenticated() {
 		return
 	}
-	clientJson, err := json.MarshalIndent(c, "", "  ")
+	clientJSON, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		Fatal("Failed to marshal swift client", err)
 	}
-	if err := ioutil.WriteFile(tokenCacheFile, clientJson, 0600); err != nil {
+	if err := ioutil.WriteFile(tokenCacheFile, clientJSON, 0600); err != nil {
 		Sayf("Failed to cache token to %s: %s", tokenCacheFile, err)
 		os.Exit(1)
 	}
