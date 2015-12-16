@@ -9,10 +9,10 @@ import (
 
 func main() {
 	var request resource.CheckRequest
-
 	if err := json.NewDecoder(os.Stdin).Decode(&request); err != nil {
 		resource.Fatal("reading request from stdin", err)
 	}
+
 	response, err := resource.Check(request)
 	if err != nil {
 		resource.Fail(err)

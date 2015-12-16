@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+
 	"resource"
 )
 
@@ -26,5 +27,4 @@ func main() {
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
 		resource.Fatal("writing response to stdout", err)
 	}
-
 }
