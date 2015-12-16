@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/sapcc/concourse-swift-resource.png?branch=master)](https://travis-ci.org/databus23/goslo.policy)
 # Concourse resource for OpenStack Swift
 
 Versions objects in a Swift container, by pattern-matching filenames to identify
