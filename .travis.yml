@@ -6,4 +6,5 @@ go:
 
 script:
 - go get github.com/constabulary/gb/cmd/gb 
+- go get github.com/golang/lint/golint
 - make test 
