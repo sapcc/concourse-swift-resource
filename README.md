@@ -1,9 +1,9 @@
-# Swift Resource
+# Concourse resource for OpenStack Swift
 
-Versions objects in an Swift container, by pattern-matching filenames to identify
+Versions objects in a Swift container, by pattern-matching filenames to identify
 version numbers.
 
-This resource is inspired by the the [official S3 resource](https://gthub.com/concourse/s3-resource)
+This resource is inspired by the [official S3 resource](https://gthub.com/concourse/s3-resource)
 
 ## Source Configuration
 
