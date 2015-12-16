@@ -1,4 +1,4 @@
-BUILD_IMAGE:=docker.mo.sap.corp/monsoon/arc-build
+BUILD_IMAGE:=docker.mo.sap.corp/monsoon/gobuild
 IMAGE=docker.mo.sap.corp/concourse/swift-resource
 build:
 	docker run --rm -v $(CURDIR):/build -w /build $(BUILD_IMAGE) gb build -f -ldflags="-w -s"
