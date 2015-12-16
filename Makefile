@@ -1,5 +1,5 @@
-BUILD_IMAGE:=docker.mo.sap.corp/monsoon/gobuild
-IMAGE=docker.mo.sap.corp/concourse/swift-resource
+BUILD_IMAGE := databus23/gobuild:1.5.2
+IMAGE       := databus23/concourse-swift-resource
 build:
 	docker run --rm -v $(CURDIR):/build -w /build $(BUILD_IMAGE) gb build -f -ldflags="-w -s"
 	docker build --rm -t $(IMAGE) .
