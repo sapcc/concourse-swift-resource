@@ -8,7 +8,7 @@ import (
 )
 
 func Fail(err error) {
-	fmt.Fprintf(os.Stderr, colorstring.Color("[red] error %s"), err)
+	fmt.Fprintf(os.Stderr, colorstring.Color("[red]error %s\n"), err)
 	os.Exit(1)
 }
 
