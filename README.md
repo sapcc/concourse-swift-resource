@@ -30,7 +30,7 @@ In your bosh deployment manifest, add to the following to the `groundcrew.additi
 
 * `container`: *Required* The swift container
 
-* `regex`: *.* The pattern to match filenames against. The first
+* `regex`: *Required* The pattern to match filenames against. The first
   grouped match is used to extract the version. The extracted version
   needs to be parseable by [go-version](https://github.com/hashicorp/go-version)
 
@@ -48,9 +48,9 @@ object's filename is the resulting version.
 
 Places the following files in the destination:
 
-* `(filename)`: The file fetched from the container.
-* `filename`: Contains the filename of the fetched file 
-* `version`: Contains the version identified in the file name.
+* `$objectname`: The object fetched from the container.
+* `filename`: Contains the filename of the fetched object ($objectname).
+* `version`: Contains the version extracted from the file name.
 
 #### Parameters
 
