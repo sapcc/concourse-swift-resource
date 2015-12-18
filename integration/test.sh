@@ -28,7 +28,7 @@ OUT() {
 }
 
 IN() {
-	mkdir -p $2
+  mkdir -p $2
   jq "$1" resource.json | ../bin/in $2
 }
 
