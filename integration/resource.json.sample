@@ -1,0 +1,9 @@
+{
+  "username": "[SWIFT USERNAME]",
+  "api_key": "[PASSWORD]",
+  "auth_url": "[KEYSTONE URL]",
+  "domain": "[USER DOMAIN NAME]",
+  "tenant_id": "[PROJECT ID]",
+  "container": "concourse-swift-test",
+  "regex": "file_([.0-9]+)"
+}
