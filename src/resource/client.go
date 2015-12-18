@@ -1,9 +1,11 @@
 package resource
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 
@@ -14,6 +16,13 @@ var tokenCacheFile = "/tmp/token.cache"
 var cacheToken = false
 
 func NewClient(source Source) *swift.Connection {
+	transport := &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
+		MaxIdleConnsPerHost: 2048,
+	}
+	if source.DisableTLSVerify {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 	c := swift.Connection{
 		UserName:  source.Username,
 		ApiKey:    source.APIKey,
@@ -23,6 +32,7 @@ func NewClient(source Source) *swift.Connection {
 		TenantId:  source.TenantID, // Id of the tenant
 		Retries:   1,
 		UserAgent: fmt.Sprintf("%s (concourse swift resource; %s; container: %s)", swift.DefaultUserAgent, path.Base(os.Args[0]), source.Container),
+		Transport: transport,
 	}
 	if !cacheToken {
 		return &c
