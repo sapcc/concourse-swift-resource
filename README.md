@@ -4,7 +4,16 @@
 Versions objects in a Swift container, by pattern-matching filenames to identify
 version numbers.
 
-This resource is inspired by the [official S3 resource](https://gthub.com/concourse/s3-resource)
+This resource is heavily inspired by the [official S3 resource](https://gthub.com/concourse/s3-resource)
+
+## Deploying to Concourse
+
+In your bosh deployment manifest, add to the following to the `groundcrew.additional_resource_types`:
+
+```yaml
+- image: docker:///databus23/concourse-swift-resource
+  type: swift
+```
 
 ## Source Configuration
 
