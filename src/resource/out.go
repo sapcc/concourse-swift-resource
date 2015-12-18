@@ -61,8 +61,10 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		return nil, fmt.Errorf("Can't open source file %s: %s", fileSource, err)
 	}
 	defer file.Close()
-	if err := client.ContainerCreate(rsc.Container, nil); err != nil {
-		return nil, fmt.Errorf("Couldn't create Container %s: %s", rsc.Container, err)
+	if _, _, err := client.Container(rsc.Container); err != nil {
+		if err := client.ContainerCreate(rsc.Container, nil); err != nil {
+			return nil, fmt.Errorf("Couldn't create Container %s: %s", rsc.Container, err)
+		}
 	}
 	if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", swift.Headers{}); err != nil {
 		return nil, fmt.Errorf("Failed to upload to swift: %s", err)
