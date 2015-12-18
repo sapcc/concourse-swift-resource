@@ -20,11 +20,11 @@ export SWIFTCLIENT_INSECURE=$(jq -r .disable_tls_verify resource.json)
 CONTAINER=$(jq -r .container resource.json)
 
 CHECK() {
-  jq "$1" resource.json | ../bin/CHECK
+  jq "$1" resource.json | ../bin/check
 }
 
 OUT() {
-  jq "$1" resource.json | ../bin/OUT . 
+  jq "$1" resource.json | ../bin/out . 
 }
 
 IN() {
