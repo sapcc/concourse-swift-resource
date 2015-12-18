@@ -34,6 +34,8 @@ In your bosh deployment manifest, add to the following to the `groundcrew.additi
   grouped match is used to extract the version. The extracted version
   needs to be parseable by [go-version](https://github.com/hashicorp/go-version)
 
+* `disable_tls_verify`: Disable certificate verification for https connections to keystone and swift. Default: false
+
 ## Behaviour
 
 ### `check`: Extract versions from the container.
