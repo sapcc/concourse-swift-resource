@@ -1,4 +1,4 @@
-BUILD_IMAGE := databus23/gobuild:1.5.2
+BUILD_IMAGE := databus23/gobuild:1.5
 IMAGE       := databus23/concourse-swift-resource
 build:
 	docker run --rm -v $(CURDIR):/build -w /build $(BUILD_IMAGE) gb build -f -ldflags="-w -s"
