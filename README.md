@@ -71,7 +71,8 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 
 ``` yaml
 - name: myapp
-  type: swift 
+  type: swift
+  source:
     username: user
     api_key: secret
     auth_url: http://somewhere.at.keystone:5000/v3
