@@ -8,12 +8,12 @@ import (
 )
 
 func Fail(err error) {
-	fmt.Fprintf(os.Stderr, colorstring.Color("[red]error %s\n"), err)
+	fmt.Fprintf(os.Stderr, colorstring.Color("[red]%s\n"), err)
 	os.Exit(1)
 }
 
 func Fatal(doing string, err error) {
-	Sayf(colorstring.Color("[red]error %s: %s\n"), doing, err)
+	Sayf(colorstring.Color("[red]%s: %s\n"), doing, err)
 	os.Exit(1)
 }
 

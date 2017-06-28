@@ -10,7 +10,7 @@ func Check(request CheckRequest) ([]Version, error) {
 	rsc := request.Resource
 	regex, err := versions.Regexp(rsc.Regex)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing regular expression: %s", err)
+		return nil, fmt.Errorf("Invalid regular expression: %s", err)
 	}
 
 	client := NewClient(rsc)
