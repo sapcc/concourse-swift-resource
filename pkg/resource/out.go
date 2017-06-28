@@ -7,9 +7,10 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"version"
 
 	"github.com/ncw/swift"
+
+	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
 func Out(request OutRequest, sourceDir string) (*OutResponse, error) {

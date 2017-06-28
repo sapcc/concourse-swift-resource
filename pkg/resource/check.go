@@ -2,12 +2,16 @@ package resource
 
 import (
 	"fmt"
-	"version"
+
+	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
 func Check(request CheckRequest) ([]Version, error) {
 	rsc := request.Resource
 	regex, err := versions.Regexp(rsc.Regex)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing regular expression: %s", err)
+	}
 
 	client := NewClient(rsc)
 	if cacheToken {

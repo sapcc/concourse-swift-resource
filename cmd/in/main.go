@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"resource"
+	"github.com/sapcc/concourse-swift-resource/pkg/resource"
 )
 
 func main() {

@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"version"
 
 	"github.com/ncw/swift"
+
+	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
 func In(request InRequest, destinationDir string) (*InResponse, error) {
