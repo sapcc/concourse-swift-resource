@@ -78,7 +78,14 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	var bytes int64
 	bytes = stat.Size()
 	var fi os.FileInfo
-	if bytes > 134217728 {
+	if request.Params.SegmentSize == 0 {
+		request.Params.SegmentSize = 1073741824
+	}
+
+	if bytes > request.Params.SegmentSize {
+		if request.Params.SegmentContainer == "" {
+			request.Params.SegmentContainer += "_segments"
+		}
 		if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
 			if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
 				return nil, fmt.Errorf("Couldn't create Container %s: %s", request.Params.SegmentContainer, err)
@@ -94,17 +101,14 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		}
 
 		opts := swift.LargeObjectOpts{
-			Container:        rsc.Container,
-			ObjectName:       filename,
-			ContentType:      http.DetectContentType(fileHeader),
-			ChunkSize:        1073741824,
-			MinChunkSize:     1073741824,
+			Container:   rsc.Container,
+			ObjectName:  filename,
+			ContentType: http.DetectContentType(fileHeader),
+
+			ChunkSize:        request.Params.SegmentSize,
+			MinChunkSize:     request.Params.SegmentSize,
 			SegmentContainer: request.Params.SegmentContainer,
 		}
-		//_, err := client.ObjectCreate(rsc.Container, filename, true, "", "", nil)
-		//if err != nil {
-		//	return nil, fmt.Errorf("Failed to create Object: %s", err)
-		//}
 		out, err := client.StaticLargeObjectCreateFile(&opts)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create Static large Object: %s", err)

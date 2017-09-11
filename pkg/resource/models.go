@@ -37,8 +37,9 @@ type InResponse struct {
 }
 
 type OutParams struct {
-	From string `json:"from"`
+	From             string `json:"from"`
 	SegmentContainer string `json:"SegmentContainer"`
+	SegmentSize      int64  `json:"SegmentSize"`
 }
 
 type OutRequest struct {
@@ -49,20 +50,4 @@ type OutRequest struct {
 type OutResponse struct {
 	Version  Version    `json:"version"`
 	Metadata []Metadata `json:"metadata"`
-}
-type Headers map[string]string
-
-type LargeObjectOpts struct {
-	Container        string  // Name of container to place object
-	ObjectName       string  // Name of object
-	Flags            int     // Creation flags
-	CheckHash        bool    // If set Check the hash
-	Hash             string  // If set use this hash to check
-	ContentType      string  // Content-Type of the object
-	Headers          Headers // Additional headers to upload the object with
-	ChunkSize        int64   // Size of chunks of the object, defaults to 10MB if not set
-	MinChunkSize     int64   // Minimum chunk size, automatically set for SLO's based on info
-	SegmentContainer string  // Name of the container to place segments
-	SegmentPrefix    string  // Prefix to use for the segments
-	NoBuffer         bool    // Prevents using a bufio.Writer to write segments
 }

@@ -65,7 +65,8 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 
 * `from`: *Required.* A regexp specifying the file to upload.
 
-* `SegmentContainer` : *Required* Name of the container where segments should be stored. Segments will be created for files larger than 1 GB.
+* `SegmentContainer` : *Optional* Name of the container where segments should be stored. Segments will be created for files larger than 1 GB. Default: (Container_segments)
+* `SegmentSize`: *Optional* Size of segments(Default: 1073741824) (1 GB)
 
 ## Example Configuration
 
@@ -95,5 +96,6 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
   params:
     from: a-task/build/path/file-(.*).tgz
     SegmentContainer: mysegmentcontainer
+    SegmentSize: 1073741824
 
 ```
