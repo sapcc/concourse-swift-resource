@@ -3,6 +3,8 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -67,10 +69,62 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 			return nil, fmt.Errorf("Couldn't create Container %s: %s", rsc.Container, err)
 		}
 	}
-	if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", swift.Headers{}); err != nil {
-		return nil, fmt.Errorf("Failed to upload to swift: %s", err)
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("Can't stats of file %s: %s", fileSource, err)
 	}
-	fi, _ := file.Stat()
+
+	var bytes int64
+	bytes = stat.Size()
+	var fi os.FileInfo
+	if bytes > 134217728 {
+		if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
+			if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
+				return nil, fmt.Errorf("Couldn't create Container %s: %s", request.Params.SegmentContainer, err)
+			}
+		}
+		fileHeader := make([]byte, 512)
+		if _, err := file.Read(fileHeader); err != nil {
+			return nil, fmt.Errorf("Couldn't read header information: %s", err)
+		}
+
+		if _, err := file.Seek(0, 0); err != nil {
+			return nil, fmt.Errorf("Couldn't reset file pointer: %s", err)
+		}
+
+		opts := swift.LargeObjectOpts{
+			Container:        rsc.Container,
+			ObjectName:       filename,
+			ContentType:      http.DetectContentType(fileHeader),
+			ChunkSize:        1073741824,
+			MinChunkSize:     1073741824,
+			SegmentContainer: request.Params.SegmentContainer,
+		}
+		//_, err := client.ObjectCreate(rsc.Container, filename, true, "", "", nil)
+		//if err != nil {
+		//	return nil, fmt.Errorf("Failed to create Object: %s", err)
+		//}
+		out, err := client.StaticLargeObjectCreateFile(&opts)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create Static large Object: %s", err)
+		}
+		_, err = io.Copy(out, file)
+		if err != nil {
+			return nil, fmt.Errorf("Error writing Large Object : %s", err)
+		}
+
+		err = out.Close()
+		if err != nil {
+			return nil, fmt.Errorf("Error closing Large Object : %s", err)
+		}
+		fi, _ = file.Stat()
+	} else {
+		if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", swift.Headers{}); err != nil {
+			return nil, fmt.Errorf("Failed to upload to swift: %s", err)
+		}
+		fi, _ = file.Stat()
+	}
 
 	response := OutResponse{
 		Version: Version{Path: filename},

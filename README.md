@@ -17,16 +17,16 @@ In your bosh deployment manifest, add to the following to the `groundcrew.additi
 
 ## Source Configuration
 
-* `auth_url`: *Required.* The url for authentication (Keystone) 
+* `auth_url`: *Required.* The url for authentication (Keystone)
 
 * `username`: *Required.* The username to use when accessing the
   container.
 
 * `api_key`: *Required.* The password of the given user.
 
-* `domain`: *Required.* The domain of the user 
+* `domain`: *Required.* The domain of the user
 
-* `tenant_id`: *Optional.* The project id
+* `tenant_id`: *Required.* The project id
 
 * `container`: *Required* The swift container
 
@@ -65,6 +65,8 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 
 * `from`: *Required.* A regexp specifying the file to upload.
 
+* `SegmentContainer` : *Required* Name of the container where segments should be stored. Segments will be created for files larger than 1 GB.
+
 ## Example Configuration
 
 ### Resource
@@ -79,6 +81,7 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
     domain: somedomain
     container: mycontainer
     regex: myapp-([.0-9])+\.tgz
+    tenant_id: tenantid
 ```
 
 ### Plan
@@ -91,5 +94,6 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 - put: myapp
   params:
     from: a-task/build/path/file-(.*).tgz
-```
+    SegmentContainer: mysegmentcontainer
 
+```
