@@ -84,7 +84,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 
 	if bytes > request.Params.SegmentSize {
 		if request.Params.SegmentContainer == "" {
-			request.Params.SegmentContainer += "_segments"
+			request.Params.SegmentContainer = rsc.Container + "_segments"
 		}
 		if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
 			if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
