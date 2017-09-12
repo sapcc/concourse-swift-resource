@@ -38,8 +38,8 @@ type InResponse struct {
 
 type OutParams struct {
 	From             string `json:"from"`
-	SegmentContainer string `json:"SegmentContainer"`
-	SegmentSize      int64  `json:"SegmentSize"`
+	SegmentContainer string `json:"segment_container"`
+	SegmentSize      int64  `json:"segment_size"`
 }
 
 type OutRequest struct {
