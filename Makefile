@@ -1,5 +1,5 @@
 IMAGE := databus23/concourse-swift-resource
-TAG   := 1.1.0
+TAG   := 1.2.0
 
 ifneq ($(http_proxy),)
 BUILD_ARGS+= --build-arg http_proxy=$(http_proxy) --build-arg https_proxy=$(https_proxy) --build-arg no_proxy=$(no_proxy)
@@ -20,7 +20,7 @@ test:
 image:
 	docker build -t $(IMAGE):$(TAG) $(BUILD_ARGS) .
 
-relase: image
+release: image
 	docker tag $(IMAGE):$(TAG) $(IMAGE):latest
 	docker push $(IMAGE):$(TAG)
 	docker push $(IMAGE):latest
