@@ -16,39 +16,15 @@ import (
 )
 
 func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
-	if request.Params.From == "" {
-		return nil, fmt.Errorf("Required parameter 'from' missing")
-	}
-
-	from, err := regexp.Compile(request.Params.From)
+	fileSource, err := findFileSource(request, sourceDir)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid regex in from: %s", err)
+		return nil, err
 	}
 
 	rsc := request.Resource
-
 	regex, err := versions.Regexp(rsc.Regex)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing regex parameter: %s", err)
-	}
-
-	//if the from param contains a literal prefix containing slashes
-	//we move the search base to the deepest sub directory
-	prefix, _ := from.LiteralPrefix()
-	dir := regexp.MustCompile("^.*/").FindString(prefix)
-	searchBase := filepath.Join(sourceDir, dir)
-
-	fileSource := ""
-	filepath.Walk(searchBase, func(path string, info os.FileInfo, err error) error {
-		if from.MatchString(path) {
-			fileSource = path
-			return errors.New("Found")
-		}
-		return nil
-	})
-
-	if fileSource == "" {
-		return nil, fmt.Errorf("No file found matching %s", request.Params.From)
 	}
 
 	filename := path.Base(fileSource)
@@ -113,6 +89,38 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		},
 	}
 	return &response, nil
+}
+
+func findFileSource(request OutRequest, sourceDir string) (string, error) {
+	if request.Params.From == "" {
+		return "", fmt.Errorf("Required parameter 'from' missing")
+	}
+
+	from, err := regexp.Compile(request.Params.From)
+	if err != nil {
+		return "", fmt.Errorf("Invalid regex in from: %s", err)
+	}
+
+	//if the from param contains a literal prefix containing slashes
+	//we move the search base to the deepest sub directory
+	prefix, _ := from.LiteralPrefix()
+	dir := regexp.MustCompile("^.*/").FindString(prefix)
+	searchBase := filepath.Join(sourceDir, dir)
+
+	fileSource := ""
+	filepath.Walk(searchBase, func(path string, info os.FileInfo, err error) error {
+		if from.MatchString(path) {
+			fileSource = path
+			return errors.New("Found")
+		}
+		return nil
+	})
+
+	if fileSource == "" {
+		return "", fmt.Errorf("No file found matching %s", request.Params.From)
+	}
+
+	return fileSource, nil
 }
 
 func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.File, filename string, headers swift.Headers) error {
