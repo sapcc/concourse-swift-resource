@@ -16,33 +16,26 @@ import (
 )
 
 func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
-	fileSource, err := findFileSource(request, sourceDir)
+	fileSource, err := prepareFileSource(request, sourceDir)
 	if err != nil {
 		return nil, err
 	}
-
-	rsc := request.Resource
-	regex, err := versions.Regexp(rsc.Regex)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing regex parameter: %s", err)
-	}
-
 	filename := path.Base(fileSource)
-	version, ok := versions.Parse(filename, regex)
-	if !ok {
-		return nil, fmt.Errorf("Can't parse version from %s", filename)
-	}
 
-	client := NewClient(rsc)
+	version, err := parseVersion(request, filename)
+
+	client := NewClient(request.Resource)
 
 	file, err := os.Open(fileSource)
 	if err != nil {
 		return nil, fmt.Errorf("Can't open source file %s: %s", fileSource, err)
 	}
 	defer file.Close()
-	if _, _, err := client.Container(rsc.Container); err != nil {
-		if err := client.ContainerCreate(rsc.Container, nil); err != nil {
-			return nil, fmt.Errorf("Couldn't create Container %s: %s", rsc.Container, err)
+
+	container := request.Resource.Container
+	if _, _, err := client.Container(container); err != nil {
+		if err := client.ContainerCreate(container, nil); err != nil {
+			return nil, fmt.Errorf("Couldn't create Container %s: %s", container, err)
 		}
 	}
 
@@ -70,7 +63,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 			return nil, fmt.Errorf("Failed to upload Large Object to swift: %s", err)
 		}
 	} else {
-		if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", headers); err != nil {
+		if _, err := client.ObjectPut(container, filename, file, true, "", "", headers); err != nil {
 			return nil, fmt.Errorf("Failed to upload to swift: %s", err)
 		}
 	}
@@ -91,7 +84,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	return &response, nil
 }
 
-func findFileSource(request OutRequest, sourceDir string) (string, error) {
+func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 	if request.Params.From == "" {
 		return "", fmt.Errorf("Required parameter 'from' missing")
 	}
@@ -121,6 +114,20 @@ func findFileSource(request OutRequest, sourceDir string) (string, error) {
 	}
 
 	return fileSource, nil
+}
+
+func parseVersion(request OutRequest, filename string) (versions.Extraction, error) {
+	regex, err := versions.Regexp(request.Resource.Regex)
+	if err != nil {
+		return versions.Extraction{}, fmt.Errorf("Error parsing regex parameter: %s", err)
+	}
+
+	version, ok := versions.Parse(filename, regex)
+	if !ok {
+		return versions.Extraction{}, fmt.Errorf("Can't parse version from %s", filename)
+	}
+
+	return version, nil
 }
 
 func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.File, filename string, headers swift.Headers) error {
