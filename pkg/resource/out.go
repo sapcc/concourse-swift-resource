@@ -46,10 +46,10 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 
 	headers := swift.Headers{}
 
-	expires := request.Params.Expires
-	shouldExpire := expires != 0
-	if shouldExpire {
-		headers["X-Delete-After"] = fmt.Sprintf("%v", expires)
+	deleteAfter := request.Params.DeleteAfter
+	shouldDeleteAfter := deleteAfter != 0
+	if shouldDeleteAfter {
+		headers["X-Delete-After"] = fmt.Sprintf("%d", deleteAfter)
 	}
 
 	var bytes int64
@@ -81,6 +81,14 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 			},
 		},
 	}
+
+	if shouldDeleteAfter {
+		response.Metadata = append(response.Metadata, Metadata{
+			Name:  "DeleteAfter",
+			Value: fmt.Sprintf("%d", deleteAfter),
+		})
+	}
+
 	return &response, nil
 }
 
