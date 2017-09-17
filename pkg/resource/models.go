@@ -40,6 +40,7 @@ type OutParams struct {
 	From             string `json:"from"`
 	SegmentContainer string `json:"segment_container"`
 	SegmentSize      int64  `json:"segment_size"`
+	Expires          int64  `json:"expires"`
 }
 
 type OutRequest struct {

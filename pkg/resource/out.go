@@ -75,6 +75,14 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		return nil, fmt.Errorf("Can't stats of file %s: %s", fileSource, err)
 	}
 
+	var headers = swift.Headers{}
+
+	var expires = request.Params.Expires
+	var shouldExpire = expires != 0
+	if shouldExpire {
+		headers["X-Delete-After"] = fmt.Sprintf("%v", expires)
+	}
+
 	var bytes int64
 	bytes = stat.Size()
 	var fi os.FileInfo
@@ -101,14 +109,15 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		}
 
 		opts := swift.LargeObjectOpts{
-			Container:   rsc.Container,
-			ObjectName:  filename,
-			ContentType: http.DetectContentType(fileHeader),
-
+			Container:        rsc.Container,
+			ObjectName:       filename,
+			ContentType:      http.DetectContentType(fileHeader),
+			Headers:          headers,
 			ChunkSize:        request.Params.SegmentSize,
 			MinChunkSize:     request.Params.SegmentSize,
 			SegmentContainer: request.Params.SegmentContainer,
 		}
+
 		out, err := client.StaticLargeObjectCreateFile(&opts)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create Static large Object: %s", err)
@@ -124,7 +133,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		}
 		fi, _ = file.Stat()
 	} else {
-		if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", swift.Headers{}); err != nil {
+		if _, err := client.ObjectPut(rsc.Container, filename, file, true, "", "", headers); err != nil {
 			return nil, fmt.Errorf("Failed to upload to swift: %s", err)
 		}
 		fi, _ = file.Stat()
@@ -144,5 +153,4 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		},
 	}
 	return &response, nil
-
 }
