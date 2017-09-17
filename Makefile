@@ -17,6 +17,11 @@ test:
 	go vet ./cmd/... ./pkg/...
 	go test -v ./cmd/... ./pkg/...
 
+.PHONY: integration
+integration:
+	docker build -t $(IMAGE)-test -f Dockerfile.tdd .
+	docker run $(IMAGE)-test
+
 image:
 	docker build -t $(IMAGE):$(TAG) $(BUILD_ARGS) .
 

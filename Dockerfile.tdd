@@ -1,0 +1,14 @@
+FROM ubuntu:xenial
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends build-essential jq colordiff python3-pip python3-setuptools python3-dev ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install python-openstackclient python-swiftclient
+
+ADD bin/ /opt/resource/
+ADD integration/ /opt/resource-tests/
+
+
+WORKDIR /opt/resource-tests
+ENTRYPOINT ./test.sh
