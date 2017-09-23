@@ -40,8 +40,14 @@ func Parse(filename string, pattern *regexp.Regexp) (Extraction, bool) {
 	}
 	ver, err := version.NewVersion(matches[1])
 	if err != nil {
-		return Extraction{}, false
+		defaultVersion, _ := version.NewVersion("0.0.0+" + matches[1])
+		return Extraction{
+			Path:          filename,
+			VersionNumber: matches[1],
+			Version:       defaultVersion,
+		}, true
 	}
+
 	return Extraction{
 		Path:          filename,
 		VersionNumber: matches[1],
@@ -73,5 +79,4 @@ func Regexp(pattern string) (*regexp.Regexp, error) {
 	}
 
 	return regex, nil
-
 }
