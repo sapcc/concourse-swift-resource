@@ -63,6 +63,11 @@ expected='{"version":{"path":"file_0.2.0"},"metadata":[{"name":"Version","value"
 response=$(OUT '{source:., params: {from: "out/file_0.2.0"}}')
 MATCH "$expected" "$response"
 
+echo "Putting file_ab123"
+expected='{"version":{"path":"file_ab123"},"metadata":[{"name":"Version","value":"ab123"},{"name":"Size","value":"4"}]}'
+response=$(OUT '{source:., params: {from: "out/file_ab123"}}')
+MATCH "$expected" "$response"
+
 echo "Testing object has no expiration"
 response=$(swift stat $CONTAINER file_0.2.0 | grep 'X-Delete-At') || true; 
 if [ -z $response ]; then
@@ -73,6 +78,7 @@ else
 fi
 
 echo "Check without version"
+echo Check without version
 expected='[{"path":"file_0.2.0"}]'
 response=$(CHECK '{source:.}')
 MATCH "$expected" "$response"
@@ -94,6 +100,14 @@ expected='{"version":{"path":"file_0.2.0"},"metadata":[{"name":"Version","value"
 response=$(IN '{source:., version:{path:"file_0.2.0"}}' in/)
 MATCH "$expected" "$response"
 ls in/file_0.2.0 in/version in/filename > /dev/null
+
+rm -rf in/file_* in/version in/filename
+echo "Get version file_ab123"
+last_modified=$(swift stat $CONTAINER file_ab123 | sed -n 's/.*Last Modified: \(.*\)/\1/p')
+expected='{"version":{"path":"file_ab123"},"metadata":[{"name":"Version","value":"ab123"},{"name":"Size","value":"4"},{"name":"Last Modified","value":"'$last_modified'"}]}'
+response=$(IN '{source:., version:{path:"file_ab123"}}' in/)
+MATCH "$expected" "$response"
+ls in/file_ab123 in/version in/filename > /dev/null
 
 echo "Putting file with expiration"
 expected='{"version":{"path":"file_0.2.0"},"metadata":[{"name":"Version","value":"0.2.0"},{"name":"Size","value":"4"},{"name":"DeleteAfter","value":"3600"}]}'
