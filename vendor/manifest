@@ -18,6 +18,12 @@
 			"repository": "https://github.com/ncw/swift",
 			"revision": "9d3f812e23d270d1c66a9a01e20af1005061cdc4",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/stretchr/testify",
+			"repository": "https://github.com/stretchr/testify",
+			"revision": "890a5c3458b43e6104ff5da8dfa139d013d77544",
+			"branch": "master"
 		}
 	]
 }
