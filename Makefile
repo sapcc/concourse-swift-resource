@@ -1,5 +1,5 @@
 IMAGE := meshcloud/concourse-swift-resource
-TAG   := 1.3.0
+TAG   := 1.3.1
 
 ifneq ($(http_proxy),)
 BUILD_ARGS+= --build-arg http_proxy=$(http_proxy) --build-arg https_proxy=$(https_proxy) --build-arg no_proxy=$(no_proxy)
