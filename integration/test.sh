@@ -53,6 +53,16 @@ expected='[]'
 response=$(CHECK '{source:.}')
 MATCH "$expected" "$response"
 
+echo "Putting loosely versioned file_ab123"
+expected='{"version":{"path":"file_ab123"},"metadata":[{"name":"Version","value":"ab123"},{"name":"Size","value":"4"}]}'
+response=$(OUT '{source:., params: {from: "out/file_ab123"}}')
+MATCH "$expected" "$response"
+
+echo "Check without version should return loosely versioned file"
+expected='[{"path":"file_ab123"}]'
+response=$(CHECK '{source:.}')
+MATCH "$expected" "$response"
+
 echo "Putting file_0.1.0"
 expected='{"version":{"path":"file_0.1.0"},"metadata":[{"name":"Version","value":"0.1.0"},{"name":"Size","value":"4"}]}'
 response=$(OUT '{source:., params: {from: "out/file_0.1.0"}}')
@@ -63,12 +73,8 @@ expected='{"version":{"path":"file_0.2.0"},"metadata":[{"name":"Version","value"
 response=$(OUT '{source:., params: {from: "out/file_0.2.0"}}')
 MATCH "$expected" "$response"
 
-echo "Putting file_ab123"
-expected='{"version":{"path":"file_ab123"},"metadata":[{"name":"Version","value":"ab123"},{"name":"Size","value":"4"}]}'
-response=$(OUT '{source:., params: {from: "out/file_ab123"}}')
-MATCH "$expected" "$response"
-
-echo "Check without version"
+echo "Check without version should return last stronly versioned file"
+echo Check without version
 expected='[{"path":"file_0.2.0"}]'
 response=$(CHECK '{source:.}')
 MATCH "$expected" "$response"
@@ -98,5 +104,3 @@ expected='{"version":{"path":"file_ab123"},"metadata":[{"name":"Version","value"
 response=$(IN '{source:., version:{path:"file_ab123"}}' in/)
 MATCH "$expected" "$response"
 ls in/file_ab123 in/version in/filename > /dev/null
-
-
