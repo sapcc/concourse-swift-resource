@@ -32,9 +32,12 @@ In your bosh deployment manifest, add to the following to the `groundcrew.additi
 
 * `regex`: *Required* The pattern to match filenames against. The first
   grouped match is used to extract the version. The extracted version
-  needs to be parseable by [go-version](https://github.com/hashicorp/go-version)
+  needs to be parseable by [go-version](https://github.com/hashicorp/go-version).
+  If semver parsing fails on the first grouped match, it is re-attempted to add the capture group as [metadata](http://semver.org/#spec-item-10) to build a version like 0.0.0+matched. This is useful for "loose" versioning, e.g. when versions aren't ordered but rather specified by a git commit SHA or similar. 
 
 * `disable_tls_verify`: Disable certificate verification for https connections to keystone and swift. Default: false
+
+Note: it is highly recommended your regex for capturing versions is as strict as possible, e.g. `myapp-([.0-9])+` allows numbers and dots with at least one ore more character. You should  not use the zero or more characters quantifier (`*`) for your capture group.
 
 ## Behaviour
 
