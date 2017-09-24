@@ -35,13 +35,20 @@ type Extraction struct {
 
 func Parse(filename string, pattern *regexp.Regexp) (Extraction, bool) {
 	matches := pattern.FindStringSubmatch(filename)
-	if matches == nil || len(matches) < 2 {
+	if matches == nil || len(matches) < 2 || len(matches[1]) == 0 {
 		return Extraction{}, false
 	}
+
 	ver, err := version.NewVersion(matches[1])
 	if err != nil {
-		return Extraction{}, false
+		defaultVersion, _ := version.NewVersion("0.0.0+" + matches[1])
+		return Extraction{
+			Path:          filename,
+			VersionNumber: matches[1],
+			Version:       defaultVersion,
+		}, true
 	}
+
 	return Extraction{
 		Path:          filename,
 		VersionNumber: matches[1],
@@ -73,5 +80,4 @@ func Regexp(pattern string) (*regexp.Regexp, error) {
 	}
 
 	return regex, nil
-
 }

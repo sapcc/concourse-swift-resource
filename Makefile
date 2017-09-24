@@ -1,5 +1,5 @@
-IMAGE := databus23/concourse-swift-resource
-TAG   := 1.2.0
+IMAGE := meshcloud/concourse-swift-resource
+TAG   := 1.3.1
 
 ifneq ($(http_proxy),)
 BUILD_ARGS+= --build-arg http_proxy=$(http_proxy) --build-arg https_proxy=$(https_proxy) --build-arg no_proxy=$(no_proxy)
@@ -16,6 +16,11 @@ build:
 test:
 	go vet ./cmd/... ./pkg/...
 	go test -v ./cmd/... ./pkg/...
+
+.PHONY: integration
+integration:
+	docker build -t $(IMAGE)-test -f Dockerfile.tdd .
+	docker run $(IMAGE)-test
 
 image:
 	docker build -t $(IMAGE):$(TAG) $(BUILD_ARGS) .

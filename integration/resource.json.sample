@@ -5,5 +5,5 @@
   "domain": "[USER DOMAIN NAME]",
   "tenant_id": "[PROJECT ID]",
   "container": "concourse-swift-test",
-  "regex": "file_([.0-9]+)"
+  "regex": "file_([.a-z0-9]+)"
 }
