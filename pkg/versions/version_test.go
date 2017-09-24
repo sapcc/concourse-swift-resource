@@ -68,16 +68,17 @@ func TestUnorderedExtraction(t *testing.T) {
 
 func TestExtractionEdgeConditions(t *testing.T) {
 	filenames := []string{
-		"file-1.0", // valid
-		"file-äüö", // ignores zero-legnth version group
-		"äüö",      // ignores non-matching full string
+		"file-1.0",       // valid
+		"file-äüö",       // ignores zero-legnth version group
+		"äüö",            // ignores non-matching full string
+		"abc/file-1/asd", // invalid version in capture group
 	}
 	expected := []string{
 		"1.0",
 	}
 
 	// note: the regex allows a zero-length version group here
-	extractions, err := Extract(filenames, regexp.MustCompile("file-([0-9.]*)"))
+	extractions, err := Extract(filenames, regexp.MustCompile("file-(.*)"))
 	if err != nil {
 		t.Fatal(err)
 	}

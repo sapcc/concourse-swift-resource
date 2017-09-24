@@ -39,21 +39,28 @@ func Parse(filename string, pattern *regexp.Regexp) (Extraction, bool) {
 		return Extraction{}, false
 	}
 
+	// 1st, attempt to parse full version
 	ver, err := version.NewVersion(matches[1])
-	if err != nil {
-		defaultVersion, _ := version.NewVersion("0.0.0+" + matches[1])
+	if err == nil {
 		return Extraction{
 			Path:          filename,
 			VersionNumber: matches[1],
-			Version:       defaultVersion,
+			Version:       ver,
 		}, true
 	}
 
-	return Extraction{
-		Path:          filename,
-		VersionNumber: matches[1],
-		Version:       ver,
-	}, true
+	// 2nd, attempt to parse as a loose version (0.0 + metadata) according to semver
+	looseVersion, err := version.NewVersion("0.0.0+" + matches[1])
+	if err == nil {
+		return Extraction{
+			Path:          filename,
+			VersionNumber: matches[1],
+			Version:       looseVersion,
+		}, true
+	}
+
+	// no extraction possible
+	return Extraction{}, false
 }
 
 func Extract(filenames []string, pattern *regexp.Regexp) (Extractions, error) {
