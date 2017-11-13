@@ -67,6 +67,7 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 
 * `segment_container` : *Optional* Name of the container where segments should be stored. Segments will be created for files larger than 1 GB. (Default: ${container}_segments)
 * `segment_size`: *Optional* Size of segments (Default: 1073741824 Byte) (1 GB)
+* `delete_after`: *Optional* Instruct Swift to schedule automatic deletion of the Object in `n`seconds (Default: disabled). Useful to define Object retention policies.
 
 ## Example Configuration
 
@@ -97,5 +98,6 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
     from: a-task/build/path/file-(.*).tgz
     segment_container: mysegmentcontainer
     segment_size: 1073741824
+    delete_after: 3600
 
 ```
