@@ -8,7 +8,7 @@ This resource is heavily inspired by the [official S3 resource](https://gthub.co
 
 ## Adding to your pipeline
 
-To use the BOSH Deployment Resource, you must declare it in your pipeline as a resource type:
+To use the Swift Resource, you must declare it in your pipeline as a resource type:
 
 ```
 resource_types:
