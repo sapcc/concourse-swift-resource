@@ -6,7 +6,19 @@ version numbers.
 
 This resource is heavily inspired by the [official S3 resource](https://gthub.com/concourse/s3-resource)
 
-## Deploying to Concourse
+## Adding to your pipeline
+
+To use the Swift Resource, you must declare it in your pipeline as a resource type:
+
+```
+resource_types:
+- name: swift
+  type: docker-image
+  source:
+    repository: databus23/concourse-swift-resource
+```
+
+## Alternativly add resource with BOSH to Concourse
 
 In your bosh deployment manifest, add to the following to the `groundcrew.additional_resource_types`:
 
