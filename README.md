@@ -4,7 +4,7 @@
 Versions objects in a Swift container, by pattern-matching filenames to identify
 version numbers.
 
-This resource is heavily inspired by the [official S3 resource](https://gthub.com/concourse/s3-resource)
+This resource is heavily inspired by the [official S3 resource](https://github.com/concourse/s3-resource)
 
 ## Adding to your pipeline
 
