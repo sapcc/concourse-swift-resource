@@ -1,0 +1,6 @@
+github.com/hashicorp/go-version v0.0.0-20150512165300-999359b6b7a0 h1:+t81g/UQG/CmQIn0o96EGQ8VHbnybaUfGfS/gfrlJ7w=
+github.com/hashicorp/go-version v0.0.0-20150512165300-999359b6b7a0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/mitchellh/colorstring v0.0.0-20150228181156-61164e49940b h1:8l4UBG/vLryhtBKCqDISs2o7qWZ97Yobli2dISS3DCw=
+github.com/mitchellh/colorstring v0.0.0-20150228181156-61164e49940b/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
+github.com/ncw/swift v1.0.35 h1:1Bg5icot4nkYls4Y5Gu4FxX2d8hzlWi8KTYNOFGn0OU=
+github.com/ncw/swift v1.0.35/go.mod h1:23YIA4yWVnGwv2dQlN4bB7egfYX6YLn0Yo/S6zZO/ZM=
