@@ -34,6 +34,11 @@ func NewClient(source Source) *swift.Connection {
 		UserAgent: fmt.Sprintf("%s (concourse swift resource; %s; container: %s)", swift.DefaultUserAgent, path.Base(os.Args[0]), source.Container),
 		Transport: transport,
 	}
+
+	if err := c.Authenticate(); err != nil {
+		Fatal("Authentication failed", err)
+	}
+
 	if !cacheToken {
 		return &c
 	}

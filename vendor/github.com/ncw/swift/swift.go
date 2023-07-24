@@ -96,32 +96,36 @@ const (
 type Connection struct {
 	// Parameters - fill these in before calling Authenticate
 	// They are all optional except UserName, ApiKey and AuthUrl
-	Domain         string            // User's domain name
-	DomainId       string            // User's domain Id
-	UserName       string            // UserName for api
-	UserId         string            // User Id
-	ApiKey         string            // Key for api access
-	AuthUrl        string            // Auth URL
-	Retries        int               // Retries on error (default is 3)
-	UserAgent      string            // Http User agent (default goswift/1.0)
-	ConnectTimeout time.Duration     // Connect channel timeout (default 10s)
-	Timeout        time.Duration     // Data channel timeout (default 60s)
-	Region         string            // Region to use eg "LON", "ORD" - default is use first region (v2,v3 auth only)
-	AuthVersion    int               // Set to 1, 2 or 3 or leave at 0 for autodetect
-	Internal       bool              // Set this to true to use the the internal / service network
-	Tenant         string            // Name of the tenant (v2,v3 auth only)
-	TenantId       string            // Id of the tenant (v2,v3 auth only)
-	EndpointType   EndpointType      // Endpoint type (v2,v3 auth only) (default is public URL unless Internal is set)
-	TenantDomain   string            // Name of the tenant's domain (v3 auth only), only needed if it differs from the user domain
-	TenantDomainId string            // Id of the tenant's domain (v3 auth only), only needed if it differs the from user domain
-	TrustId        string            // Id of the trust (v3 auth only)
-	Transport      http.RoundTripper `json:"-" xml:"-"` // Optional specialised http.Transport (eg. for Google Appengine)
+	Domain                      string            // User's domain name
+	DomainId                    string            // User's domain Id
+	UserName                    string            // UserName for api
+	UserId                      string            // User Id
+	ApiKey                      string            // Key for api access
+	ApplicationCredentialId     string            // Application Credential ID
+	ApplicationCredentialName   string            // Application Credential Name
+	ApplicationCredentialSecret string            // Application Credential Secret
+	AuthUrl                     string            // Auth URL
+	Retries                     int               // Retries on error (default is 3)
+	UserAgent                   string            // Http User agent (default goswift/1.0)
+	ConnectTimeout              time.Duration     // Connect channel timeout (default 10s)
+	Timeout                     time.Duration     // Data channel timeout (default 60s)
+	Region                      string            // Region to use eg "LON", "ORD" - default is use first region (v2,v3 auth only)
+	AuthVersion                 int               // Set to 1, 2 or 3 or leave at 0 for autodetect
+	Internal                    bool              // Set this to true to use the the internal / service network
+	Tenant                      string            // Name of the tenant (v2,v3 auth only)
+	TenantId                    string            // Id of the tenant (v2,v3 auth only)
+	EndpointType                EndpointType      // Endpoint type (v2,v3 auth only) (default is public URL unless Internal is set)
+	TenantDomain                string            // Name of the tenant's domain (v3 auth only), only needed if it differs from the user domain
+	TenantDomainId              string            // Id of the tenant's domain (v3 auth only), only needed if it differs the from user domain
+	TrustId                     string            // Id of the trust (v3 auth only)
+	Transport                   http.RoundTripper `json:"-" xml:"-"` // Optional specialised http.Transport (eg. for Google Appengine)
 	// These are filled in after Authenticate is called as are the defaults for above
 	StorageUrl string
 	AuthToken  string
+	Expires    time.Time // time the token expires, may be Zero if unknown
 	client     *http.Client
 	Auth       Authenticator `json:"-" xml:"-"` // the current authenticator
-	authLock   sync.Mutex    // lock when R/W StorageUrl, AuthToken, Auth
+	authLock   *sync.Mutex   // lock when R/W StorageUrl, AuthToken, Auth
 	// swiftInfo is filled after QueryInfo is called
 	swiftInfo SwiftInfo
 }
@@ -194,6 +198,9 @@ func setFromEnv(param interface{}, name string) (err error) {
 //     OS_USERNAME - UserName for api
 //     OS_USER_ID - User Id
 //     OS_PASSWORD - Key for api access
+//     OS_APPLICATION_CREDENTIAL_ID - Application Credential ID
+//     OS_APPLICATION_CREDENTIAL_NAME - Application Credential Name
+//     OS_APPLICATION_CREDENTIAL_SECRET - Application Credential Secret
 //     OS_USER_DOMAIN_NAME - User's domain name
 //     OS_USER_DOMAIN_ID - User's domain Id
 //     OS_PROJECT_NAME - Name of the project
@@ -227,6 +234,9 @@ func (c *Connection) ApplyEnvironment() (err error) {
 		{&c.UserName, "OS_USERNAME"},
 		{&c.UserId, "OS_USER_ID"},
 		{&c.ApiKey, "OS_PASSWORD"},
+		{&c.ApplicationCredentialId, "OS_APPLICATION_CREDENTIAL_ID"},
+		{&c.ApplicationCredentialName, "OS_APPLICATION_CREDENTIAL_NAME"},
+		{&c.ApplicationCredentialSecret, "OS_APPLICATION_CREDENTIAL_SECRET"},
 		{&c.AuthUrl, "OS_AUTH_URL"},
 		{&c.Retries, "GOSWIFT_RETRIES"},
 		{&c.UserAgent, "GOSWIFT_USER_AGENT"},
@@ -297,6 +307,8 @@ var (
 	TimeoutError        = newError(408, "Timeout when reading or writing data")
 	Forbidden           = newError(403, "Operation forbidden")
 	TooLargeObject      = newError(413, "Too Large Object")
+	RateLimit           = newError(498, "Rate Limit")
+	TooManyRequests     = newError(429, "TooManyRequests")
 
 	// Mappings for authentication errors
 	authErrorMap = errorMap{
@@ -311,6 +323,7 @@ var (
 		403: Forbidden,
 		404: ContainerNotFound,
 		409: ContainerNotEmpty,
+		498: RateLimit,
 	}
 
 	// Mappings for object errors
@@ -321,6 +334,8 @@ var (
 		404: ObjectNotFound,
 		413: TooLargeObject,
 		422: ObjectCorrupted,
+		429: TooManyRequests,
+		498: RateLimit,
 	}
 )
 
@@ -420,12 +435,15 @@ func (c *Connection) setDefaults() {
 		c.Timeout = 60 * time.Second
 	}
 	if c.Transport == nil {
-		c.Transport = &http.Transport{
+		t := &http.Transport{
 			//		TLSClientConfig:    &tls.Config{RootCAs: pool},
 			//		DisableCompression: true,
-			Proxy:               http.ProxyFromEnvironment,
-			MaxIdleConnsPerHost: 2048,
+			Proxy: http.ProxyFromEnvironment,
+			// Half of linux's default open files limit (1024).
+			MaxIdleConnsPerHost: 512,
 		}
+		SetExpectContinueTimeout(t, 5*time.Second)
+		c.Transport = t
 	}
 	if c.client == nil {
 		c.client = &http.Client{
@@ -440,6 +458,9 @@ func (c *Connection) setDefaults() {
 // If you don't call it before calling one of the connection methods
 // then it will be called for you on the first access.
 func (c *Connection) Authenticate() (err error) {
+	if c.authLock == nil {
+		c.authLock = &sync.Mutex{}
+	}
 	c.authLock.Lock()
 	defer c.authLock.Unlock()
 	return c.authenticate()
@@ -471,6 +492,7 @@ again:
 	}
 	if req != nil {
 		timer := time.NewTimer(c.ConnectTimeout)
+		defer timer.Stop()
 		var resp *http.Response
 		resp, err = c.doTimeoutRequest(timer, req)
 		if err != nil {
@@ -503,6 +525,12 @@ again:
 		c.StorageUrl = c.Auth.StorageUrl(c.Internal)
 	}
 	c.AuthToken = c.Auth.Token()
+	if do, ok := c.Auth.(Expireser); ok {
+		c.Expires = do.Expires()
+	} else {
+		c.Expires = time.Time{}
+	}
+
 	if !c.authenticated() {
 		err = newError(0, "Response didn't have storage url and auth token")
 		return
@@ -555,6 +583,9 @@ func (c *Connection) UnAuthenticate() {
 //
 // Doesn't actually check the credentials against the server.
 func (c *Connection) Authenticated() bool {
+	if c.authLock == nil {
+		c.authLock = &sync.Mutex{}
+	}
 	c.authLock.Lock()
 	defer c.authLock.Unlock()
 	return c.authenticated()
@@ -564,7 +595,14 @@ func (c *Connection) Authenticated() bool {
 //
 // Call with authLock held
 func (c *Connection) authenticated() bool {
-	return c.StorageUrl != "" && c.AuthToken != ""
+	if c.StorageUrl == "" || c.AuthToken == "" {
+		return false
+	}
+	if c.Expires.IsZero() {
+		return true
+	}
+	timeUntilExpiry := c.Expires.Sub(time.Now())
+	return timeUntilExpiry >= 60*time.Second
 }
 
 // SwiftInfo contains the JSON object returned by Swift when the /info
@@ -691,6 +729,7 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 			URL.RawQuery = p.Parameters.Encode()
 		}
 		timer := time.NewTimer(c.ConnectTimeout)
+		defer timer.Stop()
 		reader := p.Body
 		if reader != nil {
 			reader = newWatchdogReader(reader, c.Timeout, timer)
@@ -703,11 +742,11 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 			for k, v := range p.Headers {
 				// Set ContentLength in req if the user passed it in in the headers
 				if k == "Content-Length" {
-					contentLength, err := strconv.ParseInt(v, 10, 64)
+					req.ContentLength, err = strconv.ParseInt(v, 10, 64)
 					if err != nil {
-						return nil, nil, fmt.Errorf("Invalid %q header %q: %v", k, v, err)
+						err = fmt.Errorf("Invalid %q header %q: %v", k, v, err)
+						return
 					}
-					req.ContentLength = contentLength
 				} else {
 					req.Header.Add(k, v)
 				}
@@ -715,13 +754,17 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 		}
 		req.Header.Add("User-Agent", c.UserAgent)
 		req.Header.Add("X-Auth-Token", authToken)
+
+		_, hasCL := p.Headers["Content-Length"]
+		AddExpectAndTransferEncoding(req, hasCL)
+
 		resp, err = c.doTimeoutRequest(timer, req)
 		if err != nil {
 			if (p.Operation == "HEAD" || p.Operation == "GET") && retries > 0 {
 				retries--
 				continue
 			}
-			return nil, nil, err
+			return
 		}
 		// Check to see if token has expired
 		if resp.StatusCode == 401 && retries > 0 {
@@ -733,15 +776,14 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 		}
 	}
 
-	if err = c.parseHeaders(resp, p.ErrorMap); err != nil {
-		return nil, nil, err
-	}
 	headers = readHeaders(resp)
+	if err = c.parseHeaders(resp, p.ErrorMap); err != nil {
+		return
+	}
 	if p.NoResponse {
-		var err error
 		drainAndClose(resp.Body, &err)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
 	} else {
 		// Cancel the request on timeout
@@ -922,7 +964,7 @@ func (c *Connection) ContainersAll(opts *ContainersOpts) ([]Container, error) {
 	return containers, nil
 }
 
-// ContainerNamesAll is like ContainerNamess but it returns all the Containers
+// ContainerNamesAll is like ContainerNames but it returns all the Containers
 //
 // It calls ContainerNames multiple times using the Marker parameter
 //
@@ -948,13 +990,14 @@ func (c *Connection) ContainerNamesAll(opts *ContainersOpts) ([]string, error) {
 
 // ObjectOpts is options for Objects() and ObjectNames()
 type ObjectsOpts struct {
-	Limit     int     // For an integer value n, limits the number of results to at most n values.
-	Marker    string  // Given a string value x, return object names greater in value than the  specified marker.
-	EndMarker string  // Given a string value x, return object names less in value than the specified marker
-	Prefix    string  // For a string value x, causes the results to be limited to object names beginning with the substring x.
-	Path      string  // For a string value x, return the object names nested in the pseudo path
-	Delimiter rune    // For a character c, return all the object names nested in the container
-	Headers   Headers // Any additional HTTP headers - can be nil
+	Limit      int     // For an integer value n, limits the number of results to at most n values.
+	Marker     string  // Given a string value x, return object names greater in value than the  specified marker.
+	EndMarker  string  // Given a string value x, return object names less in value than the specified marker
+	Prefix     string  // For a string value x, causes the results to be limited to object names beginning with the substring x.
+	Path       string  // For a string value x, return the object names nested in the pseudo path
+	Delimiter  rune    // For a character c, return all the object names nested in the container
+	Headers    Headers // Any additional HTTP headers - can be nil
+	KeepMarker bool    // Do not reset Marker when using ObjectsAll or ObjectNamesAll
 }
 
 // parse reads values out of ObjectsOpts
@@ -1008,7 +1051,8 @@ type Object struct {
 	Bytes              int64      `json:"bytes"`         // size in bytes
 	ServerLastModified string     `json:"last_modified"` // Last modified time, eg '2011-06-30T08:20:47.736680' as a string supplied by the server
 	LastModified       time.Time  // Last modified time converted to a time.Time
-	Hash               string     `json:"hash"` // MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
+	Hash               string     `json:"hash"`     // MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
+	SLOHash            string     `json:"slo_etag"` // MD5 hash of all segments' MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
 	PseudoDirectory    bool       // Set when using delimiter to show that this directory object does not really exist
 	SubDir             string     `json:"subdir"` // returned only when using delimiter to mark "pseudo directories"
 	ObjectType         ObjectType // type of this object
@@ -1060,12 +1104,16 @@ func (c *Connection) Objects(container string, opts *ObjectsOpts) ([]Object, err
 				return nil, err
 			}
 		}
+		if object.SLOHash != "" {
+			object.ObjectType = StaticLargeObjectType
+		}
 	}
 	return objects, err
 }
 
 // objectsAllOpts makes a copy of opts if set or makes a new one and
 // overrides Limit and Marker
+// Marker is not overriden if KeepMarker is set
 func objectsAllOpts(opts *ObjectsOpts, Limit int) *ObjectsOpts {
 	var newOpts ObjectsOpts
 	if opts != nil {
@@ -1074,7 +1122,9 @@ func objectsAllOpts(opts *ObjectsOpts, Limit int) *ObjectsOpts {
 	if newOpts.Limit == 0 {
 		newOpts.Limit = Limit
 	}
-	newOpts.Marker = ""
+	if !newOpts.KeepMarker {
+		newOpts.Marker = ""
+	}
 	return &newOpts
 }
 
@@ -1143,7 +1193,8 @@ func (c *Connection) ObjectsAll(container string, opts *ObjectsOpts) ([]Object, 
 
 // ObjectNamesAll is like ObjectNames but it returns all the Objects
 //
-// It calls ObjectNames multiple times using the Marker parameter
+// It calls ObjectNames multiple times using the Marker parameter. Marker is
+// reset unless KeepMarker is set
 //
 // It has a default Limit parameter but you may pass in your own
 func (c *Connection) ObjectNamesAll(container string, opts *ObjectsOpts) ([]string, error) {
@@ -1321,6 +1372,13 @@ func (file *ObjectCreateFile) Write(p []byte) (n int, err error) {
 	return
 }
 
+// CloseWithError closes the object, aborting the upload.
+func (file *ObjectCreateFile) CloseWithError(err error) error {
+	_ = file.pipeWriter.CloseWithError(err)
+	<-file.done
+	return nil
+}
+
 // Close the object and checks the md5sum if it was required.
 //
 // Also returns any other errors from the server (eg container not
@@ -1437,6 +1495,22 @@ func (c *Connection) ObjectCreate(container string, objectName string, checkHash
 		pipeReader.Close()
 		close(file.done)
 	}()
+	return
+}
+
+func (c *Connection) ObjectSymlinkCreate(container string, symlink string, targetAccount string, targetContainer string, targetObject string, targetEtag string) (headers Headers, err error) {
+
+	EMPTY_MD5 := "d41d8cd98f00b204e9800998ecf8427e"
+	symHeaders := Headers{}
+	contents := bytes.NewBufferString("")
+	if targetAccount != "" {
+		symHeaders["X-Symlink-Target-Account"] = targetAccount
+	}
+	if targetEtag != "" {
+		symHeaders["X-Symlink-Target-Etag"] = targetEtag
+	}
+	symHeaders["X-Symlink-Target"] = fmt.Sprintf("%s/%s", targetContainer, targetObject)
+	_, err = c.ObjectPut(container, symlink, contents, true, EMPTY_MD5, "application/symlink", symHeaders)
 	return
 }
 
@@ -1835,20 +1909,26 @@ type BulkDeleteResult struct {
 	Headers        Headers          // Response HTTP headers.
 }
 
-func (c *Connection) doBulkDelete(objects []string) (result BulkDeleteResult, err error) {
+func (c *Connection) doBulkDelete(objects []string, h Headers) (result BulkDeleteResult, err error) {
 	var buffer bytes.Buffer
 	for _, s := range objects {
-		buffer.WriteString(url.QueryEscape(s) + "\n")
+		u := url.URL{Path: s}
+		buffer.WriteString(u.String() + "\n")
+	}
+	extraHeaders := Headers{
+		"Accept":         "application/json",
+		"Content-Type":   "text/plain",
+		"Content-Length": strconv.Itoa(buffer.Len()),
+	}
+	for key, value := range h {
+		extraHeaders[key] = value
 	}
 	resp, headers, err := c.storage(RequestOpts{
 		Operation:  "DELETE",
 		Parameters: url.Values{"bulk-delete": []string{"1"}},
-		Headers: Headers{
-			"Accept":       "application/json",
-			"Content-Type": "text/plain",
-		},
-		ErrorMap: ContainerErrorMap,
-		Body:     &buffer,
+		Headers:    extraHeaders,
+		ErrorMap:   ContainerErrorMap,
+		Body:       &buffer,
 	})
 	if err != nil {
 		return
@@ -1888,11 +1968,27 @@ func (c *Connection) doBulkDelete(objects []string) (result BulkDeleteResult, er
 // * http://docs.openstack.org/trunk/openstack-object-storage/admin/content/object-storage-bulk-delete.html
 // * http://docs.rackspace.com/files/api/v1/cf-devguide/content/Bulk_Delete-d1e2338.html
 func (c *Connection) BulkDelete(container string, objectNames []string) (result BulkDeleteResult, err error) {
+	return c.BulkDeleteHeaders(container, objectNames, nil)
+}
+
+// BulkDeleteHeaders deletes multiple objectNames from container in one operation.
+//
+// Some servers may not accept bulk-delete requests since bulk-delete is
+// an optional feature of swift - these will return the Forbidden error.
+//
+// See also:
+// * http://docs.openstack.org/trunk/openstack-object-storage/admin/content/object-storage-bulk-delete.html
+// * http://docs.rackspace.com/files/api/v1/cf-devguide/content/Bulk_Delete-d1e2338.html
+func (c *Connection) BulkDeleteHeaders(container string, objectNames []string, h Headers) (result BulkDeleteResult, err error) {
+	if len(objectNames) == 0 {
+		result.Errors = make(map[string]error)
+		return
+	}
 	fullPaths := make([]string, len(objectNames))
 	for i, name := range objectNames {
 		fullPaths[i] = fmt.Sprintf("/%s/%s", container, name)
 	}
-	return c.doBulkDelete(fullPaths)
+	return c.doBulkDelete(fullPaths, h)
 }
 
 // BulkUploadResult stores results of BulkUpload().
@@ -2072,6 +2168,15 @@ func (c *Connection) ObjectUpdate(container string, objectName string, h Headers
 	return err
 }
 
+// urlPathEscape escapes URL path the in string using URL escaping rules
+//
+// This mimics url.PathEscape which only available from go 1.8
+func urlPathEscape(in string) string {
+	var u url.URL
+	u.Path = in
+	return u.String()
+}
+
 // ObjectCopy does a server side copy of an object to a new position
 //
 // All metadata is preserved.  If metadata is set in the headers then
@@ -2084,7 +2189,7 @@ func (c *Connection) ObjectUpdate(container string, objectName string, h Headers
 func (c *Connection) ObjectCopy(srcContainer string, srcObjectName string, dstContainer string, dstObjectName string, h Headers) (headers Headers, err error) {
 	// Meta stuff
 	extraHeaders := map[string]string{
-		"Destination": dstContainer + "/" + dstObjectName,
+		"Destination": urlPathEscape(dstContainer + "/" + dstObjectName),
 	}
 	for key, value := range h {
 		extraHeaders[key] = value
