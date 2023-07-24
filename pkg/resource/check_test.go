@@ -87,6 +87,11 @@ func testServer(objects []testObject) (server *swifttest.SwiftServer, source Sou
 		ApiKey:   swifttest.TEST_ACCOUNT,
 		AuthUrl:  server.AuthURL,
 	}
+
+	if err = client.Authenticate(); err != nil {
+		return
+	}
+
 	for _, o := range objects {
 		container := testContainer
 		if o.Container != "" {
