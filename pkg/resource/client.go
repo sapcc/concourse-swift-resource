@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -12,7 +11,7 @@ import (
 	"github.com/ncw/swift"
 )
 
-var tokenCacheFile = "/tmp/token.cache"
+var tokenCacheFile = "/tmp/token.cache" //nolint:gosec // false positive
 var cacheToken = false
 
 func NewClient(source Source) *swift.Connection {
@@ -21,7 +20,7 @@ func NewClient(source Source) *swift.Connection {
 		MaxIdleConnsPerHost: 2048,
 	}
 	if source.DisableTLSVerify {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // debugging option
 	}
 	c := swift.Connection{
 		UserName:  source.Username,
@@ -44,10 +43,10 @@ func NewClient(source Source) *swift.Connection {
 	}
 
 	if _, err := os.Stat(tokenCacheFile); err == nil {
-		if cachedJSON, err := ioutil.ReadFile(tokenCacheFile); err == nil {
+		if cachedJSON, err := os.ReadFile(tokenCacheFile); err == nil {
 			var cc swift.Connection
 			if err := json.Unmarshal(cachedJSON, &cc); err == nil {
-				if cc.UserName == cc.UserName &&
+				if c.UserName == cc.UserName &&
 					c.ApiKey == cc.ApiKey &&
 					c.AuthUrl == cc.AuthUrl &&
 					c.Domain == cc.Domain &&
@@ -75,7 +74,7 @@ func CacheClientToken(c *swift.Connection) {
 	if err != nil {
 		Fatal("Failed to marshal swift client", err)
 	}
-	if err := ioutil.WriteFile(tokenCacheFile, clientJSON, 0600); err != nil {
+	if err := os.WriteFile(tokenCacheFile, clientJSON, 0600); err != nil {
 		Sayf("Failed to cache token to %s: %s", tokenCacheFile, err)
 		os.Exit(1)
 	}

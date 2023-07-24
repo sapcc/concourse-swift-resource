@@ -6,7 +6,6 @@ import (
 )
 
 func TestExtraction(t *testing.T) {
-
 	filenames := []string{
 		"file-2.0",
 		"file-1.0",

@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,25 +22,28 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	filename := path.Base(fileSource)
 
 	version, err := parseVersion(request, filename)
+	if err != nil {
+		return nil, fmt.Errorf("parsing version failed: %s", err)
+	}
 
 	client := NewClient(request.Resource)
 
 	file, err := os.Open(fileSource)
 	if err != nil {
-		return nil, fmt.Errorf("Can't open source file %s: %s", fileSource, err)
+		return nil, fmt.Errorf("can't open source file %s: %s", fileSource, err)
 	}
 	defer file.Close()
 
 	container := request.Resource.Container
 	if _, _, err := client.Container(container); err != nil {
 		if err := client.ContainerCreate(container, nil); err != nil {
-			return nil, fmt.Errorf("Couldn't create Container %s: %s", container, err)
+			return nil, fmt.Errorf("couldn't create Container %s: %s", container, err)
 		}
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("Can't stats of file %s: %s", fileSource, err)
+		return nil, fmt.Errorf("can't stats of file %s: %s", fileSource, err)
 	}
 
 	headers := swift.Headers{}
@@ -52,30 +54,29 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		headers["X-Delete-After"] = fmt.Sprintf("%d", deleteAfter)
 	}
 
-	var bytes int64
-	bytes = stat.Size()
+	bytes := stat.Size()
 	if request.Params.SegmentSize == 0 {
 		request.Params.SegmentSize = 1073741824
 	}
 
 	if bytes > request.Params.SegmentSize {
 		if err := uploadLargeObject(request, client, file, filename, headers); err != nil {
-			return nil, fmt.Errorf("Failed to upload Large Object to swift: %s", err)
+			return nil, fmt.Errorf("failed to upload Large Object to swift: %s", err)
 		}
 	} else {
 		if _, err := client.ObjectPut(container, filename, file, true, "", "", headers); err != nil {
-			return nil, fmt.Errorf("Failed to upload to swift: %s", err)
+			return nil, fmt.Errorf("failed to upload to swift: %s", err)
 		}
 	}
 
 	response := OutResponse{
 		Version: Version{Path: filename},
 		Metadata: []Metadata{
-			Metadata{
+			{
 				Name:  "Version",
 				Value: version.VersionNumber,
 			},
-			Metadata{
+			{
 				Name:  "Size",
 				Value: fmt.Sprintf("%d", stat.Size()),
 			},
@@ -94,12 +95,12 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 
 func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 	if request.Params.From == "" {
-		return "", fmt.Errorf("Required parameter 'from' missing")
+		return "", fmt.Errorf("required parameter 'from' missing")
 	}
 
 	from, err := regexp.Compile(request.Params.From)
 	if err != nil {
-		return "", fmt.Errorf("Invalid regex in from: %s", err)
+		return "", fmt.Errorf("invalid regex in from: %s", err)
 	}
 
 	//if the from param contains a literal prefix containing slashes
@@ -109,16 +110,20 @@ func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 	searchBase := filepath.Join(sourceDir, dir)
 
 	fileSource := ""
-	filepath.Walk(searchBase, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(searchBase, func(path string, _ os.FileInfo, _ error) error {
 		if from.MatchString(path) {
 			fileSource = path
-			return errors.New("Found")
+			return nil
 		}
 		return nil
 	})
 
+	if err != nil {
+		return "", err
+	}
+
 	if fileSource == "" {
-		return "", fmt.Errorf("No file found matching %s", request.Params.From)
+		return "", fmt.Errorf("no file found matching %s", request.Params.From)
 	}
 
 	return fileSource, nil
@@ -127,12 +132,12 @@ func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 func parseVersion(request OutRequest, filename string) (versions.Extraction, error) {
 	regex, err := versions.Regexp(request.Resource.Regex)
 	if err != nil {
-		return versions.Extraction{}, fmt.Errorf("Error parsing regex parameter: %s", err)
+		return versions.Extraction{}, fmt.Errorf("error parsing regex parameter: %s", err)
 	}
 
 	version, ok := versions.Parse(filename, regex)
 	if !ok {
-		return versions.Extraction{}, fmt.Errorf("Can't parse version from %s", filename)
+		return versions.Extraction{}, fmt.Errorf("can't parse version from %s", filename)
 	}
 
 	return version, nil
@@ -146,16 +151,16 @@ func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.Fi
 	}
 	if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
 		if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
-			return fmt.Errorf("Couldn't create Container %s: %s", request.Params.SegmentContainer, err)
+			return fmt.Errorf("couldn't create Container %s: %s", request.Params.SegmentContainer, err)
 		}
 	}
 	fileHeader := make([]byte, 512)
 	if _, err := file.Read(fileHeader); err != nil {
-		return fmt.Errorf("Couldn't read header information: %s", err)
+		return fmt.Errorf("couldn't read header information: %s", err)
 	}
 
 	if _, err := file.Seek(0, 0); err != nil {
-		return fmt.Errorf("Couldn't reset file pointer: %s", err)
+		return fmt.Errorf("couldn't reset file pointer: %s", err)
 	}
 
 	opts := swift.LargeObjectOpts{
@@ -170,16 +175,16 @@ func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.Fi
 
 	out, err := client.StaticLargeObjectCreateFile(&opts)
 	if err != nil {
-		return fmt.Errorf("Failed to create Static large Object: %s", err)
+		return fmt.Errorf("failed to create Static large Object: %s", err)
 	}
 	_, err = io.Copy(out, file)
 	if err != nil {
-		return fmt.Errorf("Error writing Large Object : %s", err)
+		return fmt.Errorf("error writing Large Object : %s", err)
 	}
 
 	err = out.Close()
 	if err != nil {
-		return fmt.Errorf("Error closing Large Object : %s", err)
+		return fmt.Errorf("error closing Large Object : %s", err)
 	}
 
 	return nil

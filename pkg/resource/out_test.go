@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -17,12 +16,12 @@ func TestOut(t *testing.T) {
 	}
 	defer testServer.Close()
 
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("Failed to create source directory %s: %s", dir, err)
 	}
 	defer os.RemoveAll(dir)
-	if err := ioutil.WriteFile(filepath.Join(dir, testVersion), []byte("foo"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, testVersion), []byte("foo"), 0644); err != nil {
 		t.Fatal("Failed to write test file ", err)
 	}
 
@@ -33,7 +32,8 @@ func TestOut(t *testing.T) {
 				From: "test_.*",
 			},
 		},
-		dir)
+		dir,
+	)
 
 	if err != nil {
 		t.Fatal("check failed: ", err)
@@ -57,5 +57,4 @@ func TestOut(t *testing.T) {
 	if content != "foo" {
 		t.Fatalf("Expected object %s to contain %#v, got %#v", testVersion, "foo", content)
 	}
-
 }

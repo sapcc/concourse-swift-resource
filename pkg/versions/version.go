@@ -14,11 +14,11 @@ func (e Extractions) Len() int {
 	return len(e)
 }
 
-func (e Extractions) Less(i int, j int) bool {
+func (e Extractions) Less(i, j int) bool {
 	return e[i].Version.LessThan(e[j].Version)
 }
 
-func (e Extractions) Swap(i int, j int) {
+func (e Extractions) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
@@ -69,9 +69,8 @@ func Regexp(pattern string) (*regexp.Regexp, error) {
 	}
 
 	if regex.NumSubexp() != 1 {
-		return nil, errors.New("Regular expression needs to have exactly one subexpression")
+		return nil, errors.New("regular expression needs to have exactly one subexpression")
 	}
 
 	return regex, nil
-
 }

@@ -61,7 +61,6 @@ func TestCheckResource(t *testing.T) {
 	if !reflect.DeepEqual(versions, expected) {
 		t.Fatalf("Expected %v, got %v", expected, versions)
 	}
-
 }
 
 type testObject struct {
