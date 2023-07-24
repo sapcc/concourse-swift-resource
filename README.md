@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/sapcc/concourse-swift-resource.png?branch=master)](https://travis-ci.org/sapcc/concourse-swift-resource)
 # Concourse resource for OpenStack Swift
 
 Versions objects in a Swift container, by pattern-matching filenames to identify
@@ -10,7 +9,7 @@ This resource is heavily inspired by the [official S3 resource](https://github.c
 
 To use the Swift Resource, you must declare it in your pipeline as a resource type:
 
-```
+```yaml
 resource_types:
 - name: swift
   type: docker-image
@@ -18,7 +17,7 @@ resource_types:
     repository: databus23/concourse-swift-resource
 ```
 
-## Alternativly add resource with BOSH to Concourse
+## Alternatively add resource with BOSH to Concourse
 
 In your bosh deployment manifest, add to the following to the `groundcrew.additional_resource_types`:
 
@@ -50,13 +49,13 @@ In your bosh deployment manifest, add to the following to the `groundcrew.additi
 
 ## Behaviour
 
-### `check`: Extract versions from the container.
+### `check`: Extract versions from the container
 
 Objects will be found via the pattern configured by `regex`. The versions
 will be used to order them (using [semver](http://semver.org/)). Each
 object's filename is the resulting version.
 
-### `in`: Fetch an object from the container.
+### `in`: Fetch an object from the container
 
 Places the following files in the destination:
 
@@ -68,8 +67,7 @@ Places the following files in the destination:
 
 *None.*
 
-
-### `out`: Upload an object to the container.
+### `out`: Upload an object to the container
 
 Given a path specified by `from`, upload it to the Swift container. The path must identify a single file. The filename must conform to the `regex` specified in the resource.
 
@@ -85,7 +83,7 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
 
 ### Resource
 
-``` yaml
+```yaml
 - name: myapp
   type: swift
   source:
@@ -111,5 +109,4 @@ Given a path specified by `from`, upload it to the Swift container. The path mus
     segment_container: mysegmentcontainer
     segment_size: 1073741824
     delete_after: 3600
-
 ```
