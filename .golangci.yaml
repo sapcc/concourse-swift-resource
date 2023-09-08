@@ -25,12 +25,6 @@ issues:
   max-same-issues: 0
 
 linters-settings:
-  depguard:
-      rules:
-        sha256-simd:
-          deny:
-          - pkg: crypto/sha256
-            desc: sha256 hashing must be done with github.com/minio/sha256-simd
   dupl:
     # Tokens count to trigger issue, 150 by default.
     threshold: 100
@@ -43,6 +37,10 @@ linters-settings:
     forbid:
       # ioutil package has been deprecated: https://github.com/golang/go/issues/42026
       - ^ioutil\..*$
+      # Using http.DefaultServeMux is discouraged because it's a global variable that some packages silently and magically add handlers to (esp. net/http/pprof).
+      # Applications wishing to use http.ServeMux should obtain local instances through http.NewServeMux() instead of using the global default instance.
+      - ^http.DefaultServeMux$
+      - ^http.Handle(?:Func)?$
   gocritic:
     enabled-checks:
       - boolExprSimplify
@@ -105,10 +103,11 @@ linters:
   enable:
     - bodyclose
     - containedctx
-    - depguard
     - dupl
     - dupword
+    - durationcheck
     - errcheck
+    - errorlint
     - exportloopref
     - forbidigo
     - gocheckcompilerdirectives
@@ -120,6 +119,7 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - noctx
     - nolintlint
     - nosprintfhostport
     - rowserrcheck

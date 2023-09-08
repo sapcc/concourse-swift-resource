@@ -10,7 +10,7 @@ func Check(request CheckRequest) ([]Version, error) {
 	rsc := request.Resource
 	regex, err := versions.Regexp(rsc.Regex)
 	if err != nil {
-		return nil, fmt.Errorf("invalid regular expression: %s", err)
+		return nil, fmt.Errorf("invalid regular expression: %w", err)
 	}
 
 	client := NewClient(rsc)
@@ -19,11 +19,11 @@ func Check(request CheckRequest) ([]Version, error) {
 	}
 	names, err := client.ObjectNamesAll(rsc.Container, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to enumerate objects: %s", err)
+		return nil, fmt.Errorf("failed to enumerate objects: %w", err)
 	}
 	extractions, err := versions.Extract(names, regex)
 	if err != nil {
-		return nil, fmt.Errorf("error: %s", err)
+		return nil, err
 	}
 	response := []Version{}
 	if len(extractions) > 0 {

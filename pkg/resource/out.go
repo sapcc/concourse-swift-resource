@@ -23,27 +23,27 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 
 	version, err := parseVersion(request, filename)
 	if err != nil {
-		return nil, fmt.Errorf("parsing version failed: %s", err)
+		return nil, fmt.Errorf("parsing version failed: %w", err)
 	}
 
 	client := NewClient(request.Resource)
 
 	file, err := os.Open(fileSource)
 	if err != nil {
-		return nil, fmt.Errorf("can't open source file %s: %s", fileSource, err)
+		return nil, err
 	}
 	defer file.Close()
 
 	container := request.Resource.Container
 	if _, _, err := client.Container(container); err != nil {
 		if err := client.ContainerCreate(container, nil); err != nil {
-			return nil, fmt.Errorf("couldn't create Container %s: %s", container, err)
+			return nil, fmt.Errorf("couldn't create Container %s: %w", container, err)
 		}
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("can't stats of file %s: %s", fileSource, err)
+		return nil, err
 	}
 
 	headers := swift.Headers{}
@@ -61,11 +61,11 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 
 	if bytes > request.Params.SegmentSize {
 		if err := uploadLargeObject(request, client, file, filename, headers); err != nil {
-			return nil, fmt.Errorf("failed to upload Large Object to swift: %s", err)
+			return nil, fmt.Errorf("failed to upload Large Object to swift: %w", err)
 		}
 	} else {
 		if _, err := client.ObjectPut(container, filename, file, true, "", "", headers); err != nil {
-			return nil, fmt.Errorf("failed to upload to swift: %s", err)
+			return nil, fmt.Errorf("failed to upload to swift: %w", err)
 		}
 	}
 
@@ -100,7 +100,7 @@ func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 
 	from, err := regexp.Compile(request.Params.From)
 	if err != nil {
-		return "", fmt.Errorf("invalid regex in from: %s", err)
+		return "", fmt.Errorf("invalid regex in from: %w", err)
 	}
 
 	//if the from param contains a literal prefix containing slashes
@@ -132,7 +132,7 @@ func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 func parseVersion(request OutRequest, filename string) (versions.Extraction, error) {
 	regex, err := versions.Regexp(request.Resource.Regex)
 	if err != nil {
-		return versions.Extraction{}, fmt.Errorf("error parsing regex parameter: %s", err)
+		return versions.Extraction{}, fmt.Errorf("error parsing regex parameter: %w", err)
 	}
 
 	version, ok := versions.Parse(filename, regex)
@@ -151,16 +151,16 @@ func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.Fi
 	}
 	if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
 		if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
-			return fmt.Errorf("couldn't create Container %s: %s", request.Params.SegmentContainer, err)
+			return fmt.Errorf("couldn't create Container %s: %w", request.Params.SegmentContainer, err)
 		}
 	}
 	fileHeader := make([]byte, 512)
 	if _, err := file.Read(fileHeader); err != nil {
-		return fmt.Errorf("couldn't read header information: %s", err)
+		return fmt.Errorf("couldn't read header information: %w", err)
 	}
 
 	if _, err := file.Seek(0, 0); err != nil {
-		return fmt.Errorf("couldn't reset file pointer: %s", err)
+		return fmt.Errorf("couldn't reset file pointer: %w", err)
 	}
 
 	opts := swift.LargeObjectOpts{
@@ -175,16 +175,16 @@ func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.Fi
 
 	out, err := client.StaticLargeObjectCreateFile(&opts)
 	if err != nil {
-		return fmt.Errorf("failed to create Static large Object: %s", err)
+		return fmt.Errorf("failed to create Static large Object: %w", err)
 	}
 	_, err = io.Copy(out, file)
 	if err != nil {
-		return fmt.Errorf("error writing Large Object : %s", err)
+		return fmt.Errorf("error writing Large Object : %w", err)
 	}
 
 	err = out.Close()
 	if err != nil {
-		return fmt.Errorf("error closing Large Object : %s", err)
+		return fmt.Errorf("error closing Large Object : %w", err)
 	}
 
 	return nil
