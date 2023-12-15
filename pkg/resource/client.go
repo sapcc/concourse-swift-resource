@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -8,13 +9,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/ncw/swift"
+	"github.com/ncw/swift/v2"
 )
 
 var tokenCacheFile = "/tmp/token.cache" //nolint:gosec // false positive
 var cacheToken = false
 
-func NewClient(source Source) *swift.Connection {
+func NewClient(ctx context.Context, source Source) *swift.Connection {
 	transport := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
 		MaxIdleConnsPerHost: 2048,
@@ -34,7 +35,7 @@ func NewClient(source Source) *swift.Connection {
 		Transport: transport,
 	}
 
-	if err := c.Authenticate(); err != nil {
+	if err := c.Authenticate(ctx); err != nil {
 		Fatal("Authentication failed", err)
 	}
 

@@ -3,7 +3,6 @@
 //
 // This comes from the https://github.com/mitchellh/goamz
 // and was adapted for Swift
-//
 package swifttest
 
 import (
@@ -34,7 +33,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"testing"
 	"time"
 )
 
@@ -51,8 +49,6 @@ type SwiftServer struct {
 	// See https://golang.org/pkg/sync/atomic/#pkg-note-BUG for more details.
 	reqId int64
 	sync.RWMutex
-	t        *testing.T
-	mu       sync.Mutex
 	Listener net.Listener
 	AuthURL  string
 	URL      string
@@ -145,7 +141,6 @@ type container struct {
 	sync.RWMutex
 	metadata
 	name    string
-	ctime   time.Time
 	objects map[string]*object
 }
 
@@ -186,15 +181,6 @@ type objectResource struct {
 type containerResource struct {
 	name      string
 	container *container // non-nil if the container already exists.
-}
-
-var responseParams = map[string]bool{
-	"content-type":        true,
-	"content-language":    true,
-	"expires":             true,
-	"cache-control":       true,
-	"content-disposition": true,
-	"content-encoding":    true,
 }
 
 func fatalf(code int, codeStr string, errf string, a ...interface{}) {
@@ -319,9 +305,15 @@ func (r containerResource) get(a *action) interface{} {
 	} else {
 		for _, item := range objects {
 			if obj, ok := item.(*object); ok {
-				a.w.Write([]byte(obj.name + "\n"))
+				_, err := a.w.Write([]byte(obj.name + "\n"))
+				if err != nil {
+					fatalf(500, "WriteFailed", "Write failed")
+				}
 			} else if subdir, ok := item.(Subdir); ok {
-				a.w.Write([]byte(subdir.Subdir + "\n"))
+				_, err := a.w.Write([]byte(subdir.Subdir + "\n"))
+				if err != nil {
+					fatalf(500, "WriteFailed", "Write failed")
+				}
 			}
 		}
 		return nil
@@ -398,7 +390,12 @@ func (r containerResource) put(a *action) interface{} {
 			if err != nil {
 				fatalf(400, "TODO", "Invalid tar.gz")
 			}
-			defer gzr.Close()
+			defer func() {
+				err := gzr.Close()
+				if err != nil {
+					fatalf(400, "CloseFailed", "Close failed")
+				}
+			}()
 			reader = tar.NewReader(gzr)
 		case "tar.bz2":
 			bzr := bzip2.NewReader(dataReader)
@@ -412,8 +409,6 @@ func (r containerResource) put(a *action) interface{} {
 			header, err := reader.Next()
 			if err == io.EOF {
 				break
-			} else if err != nil {
-				//return location, err
 			}
 			if header == nil {
 				continue
@@ -543,7 +538,6 @@ func getPAXRecords(h *tar.Header) map[string]string {
 // http://docs.openstack.org/api/openstack-object-storage/1.0/content/ch_object-storage-dev-api-storage.html
 //
 // Container names cannot exceed 256 bytes and cannot contain the / character.
-//
 func validContainerName(name string) bool {
 	if len(name) == 0 || len(name) > 256 {
 		return false
@@ -660,7 +654,10 @@ func (objr objectResource) get(a *action) interface{} {
 	} else if value, ok := obj.meta["X-Static-Large-Object"]; ok && value[0] == "True" && a.req.URL.Query().Get("multipart-manifest") != "get" {
 		var segments []io.Reader
 		var segmentList []segment
-		json.Unmarshal(obj.data, &segmentList)
+		err := json.Unmarshal(obj.data, &segmentList)
+		if err != nil {
+			fatalf(400, "BadParameters", "Unmarshal failed.")
+		}
 		cursor := 0
 		size := 0
 		sum := md5.New()
@@ -734,7 +731,7 @@ func (objr objectResource) put(a *action) interface{} {
 		fatalf(400, "TODO", "read error")
 	}
 	gotHash := sum.Sum(nil)
-	if expectHash != nil && bytes.Compare(gotHash, expectHash) != 0 {
+	if expectHash != nil && !bytes.Equal(gotHash, expectHash) {
 		fatalf(422, "Bad ETag", "The ETag you specified did not match what we received")
 	}
 	if a.req.ContentLength >= 0 && int64(len(data)) != a.req.ContentLength {
@@ -769,7 +766,10 @@ func (objr objectResource) put(a *action) interface{} {
 		a.req.Header.Set("X-Static-Large-Object", "True")
 
 		var segments []segment
-		json.Unmarshal(data, &segments)
+		err := json.Unmarshal(data, &segments)
+		if err != nil {
+			fatalf(400, "BadParameters", "Unmarshal failed.")
+		}
 		for i := range segments {
 			segments[i].Name = "/" + segments[i].Path
 			segments[i].Path = ""
@@ -874,7 +874,7 @@ func (objr objectResource) copy(a *action) interface{} {
 		fatalf(400, "Bad Request", "Destination must point to a valid object path")
 	}
 
-	if objr2.container.name != objr2.container.name && obj2.name != obj.name {
+	if objr2.container.name != objr.container.name && obj2.name != obj.name {
 		obj2.Lock()
 		defer obj2.Unlock()
 	}
@@ -901,7 +901,10 @@ func (objr objectResource) copy(a *action) interface{} {
 
 func (s *SwiftServer) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	// ignore error from ParseForm as it's usually spurious.
-	req.ParseForm()
+	err := req.ParseForm()
+	if err != nil {
+		fatalf(400, "BadParameters", "Parse form failed.")
+	}
 
 	if fn := s.override[req.URL.Path]; fn != nil {
 		originalRW := w
@@ -954,8 +957,8 @@ func (s *SwiftServer) serveHTTP(w http.ResponseWriter, req *http.Request) {
 				_, _ = rand.Read(r)
 				id := fmt.Sprintf("%X", r)
 				w.Header().Set("X-Storage-Url", s.URL+"/AUTH_"+username)
-				w.Header().Set("X-Auth-Token", "AUTH_tk"+string(id))
-				w.Header().Set("X-Storage-Token", "AUTH_tk"+string(id))
+				w.Header().Set("X-Auth-Token", "AUTH_tk"+id)
+				w.Header().Set("X-Storage-Token", "AUTH_tk"+id)
 				s.Sessions[id] = &session{
 					username: username,
 				}
@@ -1016,7 +1019,6 @@ func (s *SwiftServer) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		if !ok {
 			s.RUnlock()
 			panic(notAuthorized())
-			return
 		}
 
 		a.user = s.Accounts[session.username]
@@ -1046,9 +1048,15 @@ func (s *SwiftServer) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		} else {
 			switch r := resp.(type) {
 			case string:
-				w.Write([]byte(r))
+				_, err := w.Write([]byte(r))
+				if err != nil {
+					fatalf(500, "WriteFailed", "Write failed.")
+				}
 			default:
-				w.Write(resp.([]byte))
+				_, err := w.Write(resp.([]byte))
+				if err != nil {
+					fatalf(500, "WriteFailed", "Write failed.")
+				}
 			}
 		}
 	}
@@ -1073,7 +1081,7 @@ var pathRegexp = regexp.MustCompile("/v1/AUTH_([a-zA-Z0-9]+)(/([^/]+)(/(.*))?)?"
 func (srv *SwiftServer) parseURL(u *url.URL) (account string, container string, object string, err error) {
 	m := pathRegexp.FindStringSubmatch(u.Path)
 	if m == nil {
-		return "", "", "", fmt.Errorf("Couldn't parse the specified URI")
+		return "", "", "", fmt.Errorf("couldn't parse the specified URI")
 	}
 	account = m[1]
 	container = m[3]
@@ -1131,9 +1139,6 @@ func (srv *SwiftServer) resourceForURL(u *url.URL) (r resource) {
 	return objr
 }
 
-// nullResource has error stubs for all resource methods.
-type nullResource struct{}
-
 func notAllowed() interface{} {
 	fatalf(400, "MethodNotAllowed", "The specified method is not allowed against this resource")
 	return nil
@@ -1143,12 +1148,6 @@ func notAuthorized() interface{} {
 	fatalf(401, "Unauthorized", "This server could not verify that you are authorized to access the document you requested.")
 	return nil
 }
-
-func (nullResource) put(a *action) interface{}    { return notAllowed() }
-func (nullResource) get(a *action) interface{}    { return notAllowed() }
-func (nullResource) post(a *action) interface{}   { return notAllowed() }
-func (nullResource) delete(a *action) interface{} { return notAllowed() }
-func (nullResource) copy(a *action) interface{}   { return notAllowed() }
 
 type rootResource struct{}
 
@@ -1195,7 +1194,10 @@ func (rootResource) get(a *action) interface{} {
 				Name:  container.name,
 			})
 		} else {
-			a.w.Write([]byte(container.name + "\n"))
+			_, err := a.w.Write([]byte(container.name + "\n"))
+			if err != nil {
+				fatalf(500, "WriteFailed", "Write failed.")
+			}
 		}
 	}
 
@@ -1275,7 +1277,10 @@ func (r rootResource) delete(a *action) interface{} {
 		}
 
 		resp := fmt.Sprintf("Number Deleted: %d\nNumber Not Found: %d\nErrors: \nResponse Status: 200 OK\n", nb, notFound)
-		a.w.Write([]byte(resp))
+		_, err = a.w.Write([]byte(resp))
+		if err != nil {
+			fatalf(500, "WriteFailed", "Write failed.")
+		}
 		return nil
 	}
 
@@ -1285,7 +1290,7 @@ func (r rootResource) delete(a *action) interface{} {
 func (rootResource) copy(a *action) interface{} { return notAllowed() }
 
 func NewSwiftServer(address string) (*SwiftServer, error) {
-	if strings.Index(address, ":") == -1 {
+	if !strings.Contains(address, ":") {
 		address += ":0"
 	}
 	l, err := net.Listen("tcp", address)
@@ -1310,13 +1315,15 @@ func NewSwiftServer(address string) (*SwiftServer, error) {
 		Containers: make(map[string]*container),
 	}
 
-	go http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		server.serveHTTP(w, req)
-	}))
+	go func() {
+		_ = http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			server.serveHTTP(w, req)
+		}))
+	}()
 
 	return server, nil
 }
 
 func (srv *SwiftServer) Close() {
-	srv.Listener.Close()
+	_ = srv.Listener.Close()
 }

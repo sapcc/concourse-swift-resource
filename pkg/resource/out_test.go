@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -8,9 +9,10 @@ import (
 )
 
 func TestOut(t *testing.T) {
+	ctx := context.TODO()
 	cacheToken = false
 	testVersion := "test_1.2.4"
-	testServer, source, client, err := testServer([]testObject{})
+	testServer, source, client, err := testServer(ctx, []testObject{})
 	if err != nil {
 		t.Fatal("Failed to setup swift mock ", err)
 	}
@@ -26,6 +28,7 @@ func TestOut(t *testing.T) {
 	}
 
 	response, err := Out(
+		ctx,
 		OutRequest{
 			Resource: source,
 			Params: OutParams{
@@ -50,7 +53,7 @@ func TestOut(t *testing.T) {
 		t.Fatalf("Expected %v, got %v", expected, response)
 	}
 
-	content, err := client.ObjectGetString(testContainer, testVersion)
+	content, err := client.ObjectGetString(ctx, testContainer, testVersion)
 	if err != nil {
 		t.Fatalf("Error fetching object %s from container %s", testVersion, err)
 	}

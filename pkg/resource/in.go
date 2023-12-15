@@ -1,16 +1,17 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/ncw/swift"
+	"github.com/ncw/swift/v2"
 
 	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
-func In(request InRequest, destinationDir string) (*InResponse, error) {
+func In(ctx context.Context, request InRequest, destinationDir string) (*InResponse, error) {
 	rsc := request.Resource
 	regex, err := versions.Regexp(rsc.Regex)
 	if err != nil {
@@ -28,13 +29,13 @@ func In(request InRequest, destinationDir string) (*InResponse, error) {
 		return nil, err
 	}
 
-	client := NewClient(rsc)
+	client := NewClient(ctx, rsc)
 
 	file, err := os.OpenFile(filepath.Join(destinationDir, filename), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return nil, err
 	}
-	headers, err := client.ObjectGet(rsc.Container, filename, file, true, swift.Headers{})
+	headers, err := client.ObjectGet(ctx, rsc.Container, filename, file, true, swift.Headers{})
 	file.Close()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch object: %w", err)

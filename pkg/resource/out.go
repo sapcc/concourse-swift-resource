@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,12 +11,12 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/ncw/swift"
+	"github.com/ncw/swift/v2"
 
 	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
-func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
+func Out(ctx context.Context, request OutRequest, sourceDir string) (*OutResponse, error) {
 	fileSource, err := prepareFileSource(request, sourceDir)
 	if err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 		return nil, fmt.Errorf("parsing version failed: %w", err)
 	}
 
-	client := NewClient(request.Resource)
+	client := NewClient(ctx, request.Resource)
 
 	file, err := os.Open(fileSource)
 	if err != nil {
@@ -36,8 +37,8 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	defer file.Close()
 
 	container := request.Resource.Container
-	if _, _, err := client.Container(container); err != nil {
-		if err := client.ContainerCreate(container, nil); err != nil {
+	if _, _, err := client.Container(ctx, container); err != nil {
+		if err := client.ContainerCreate(ctx, container, nil); err != nil {
 			return nil, fmt.Errorf("couldn't create Container %s: %w", container, err)
 		}
 	}
@@ -61,11 +62,11 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	}
 
 	if bytes > request.Params.SegmentSize {
-		if err := uploadLargeObject(request, client, file, filename, headers); err != nil {
+		if err := uploadLargeObject(ctx, request, client, file, filename, headers); err != nil {
 			return nil, fmt.Errorf("failed to upload Large Object to swift: %w", err)
 		}
 	} else {
-		if _, err := client.ObjectPut(container, filename, file, true, "", "", headers); err != nil {
+		if _, err := client.ObjectPut(ctx, container, filename, file, true, "", "", headers); err != nil {
 			return nil, fmt.Errorf("failed to upload to swift: %w", err)
 		}
 	}
@@ -144,14 +145,14 @@ func parseVersion(request OutRequest, filename string) (versions.Extraction, err
 	return version, nil
 }
 
-func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.File, filename string, headers swift.Headers) error {
+func uploadLargeObject(ctx context.Context, request OutRequest, client *swift.Connection, file *os.File, filename string, headers swift.Headers) error {
 	rsc := request.Resource
 
 	if request.Params.SegmentContainer == "" {
 		request.Params.SegmentContainer = rsc.Container + "_segments"
 	}
-	if _, _, err := client.Container(request.Params.SegmentContainer); err != nil {
-		if err := client.ContainerCreate(request.Params.SegmentContainer, nil); err != nil {
+	if _, _, err := client.Container(ctx, request.Params.SegmentContainer); err != nil {
+		if err := client.ContainerCreate(ctx, request.Params.SegmentContainer, nil); err != nil {
 			return fmt.Errorf("couldn't create Container %s: %w", request.Params.SegmentContainer, err)
 		}
 	}
@@ -174,7 +175,7 @@ func uploadLargeObject(request OutRequest, client *swift.Connection, file *os.Fi
 		SegmentContainer: request.Params.SegmentContainer,
 	}
 
-	out, err := client.StaticLargeObjectCreateFile(&opts)
+	out, err := client.StaticLargeObjectCreateFile(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("failed to create Static large Object: %w", err)
 	}

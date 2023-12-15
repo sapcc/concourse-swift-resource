@@ -1,23 +1,24 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sapcc/concourse-swift-resource/pkg/versions"
 )
 
-func Check(request CheckRequest) ([]Version, error) {
+func Check(ctx context.Context, request CheckRequest) ([]Version, error) {
 	rsc := request.Resource
 	regex, err := versions.Regexp(rsc.Regex)
 	if err != nil {
 		return nil, fmt.Errorf("invalid regular expression: %w", err)
 	}
 
-	client := NewClient(rsc)
+	client := NewClient(ctx, rsc)
 	if cacheToken {
 		defer CacheClientToken(client)
 	}
-	names, err := client.ObjectNamesAll(rsc.Container, nil)
+	names, err := client.ObjectNamesAll(ctx, rsc.Container, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enumerate objects: %w", err)
 	}

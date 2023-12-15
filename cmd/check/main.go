@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
@@ -13,7 +14,7 @@ func main() {
 		resource.Fatal("reading request from stdin", err)
 	}
 
-	response, err := resource.Check(request)
+	response, err := resource.Check(context.TODO(), request)
 	if err != nil {
 		resource.Fail(err)
 	}

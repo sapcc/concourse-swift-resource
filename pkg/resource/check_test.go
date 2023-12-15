@@ -1,16 +1,18 @@
 package resource
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
-	"github.com/ncw/swift"
-	"github.com/ncw/swift/swifttest"
+	"github.com/ncw/swift/v2"
+	"github.com/ncw/swift/v2/swifttest"
 )
 
 func TestCheckResource(t *testing.T) {
+	ctx := context.TODO()
 	cacheToken = false
-	testServer, source, _, err := testServer([]testObject{
+	testServer, source, _, err := testServer(ctx, []testObject{
 		{Path: "test_0.3.0"},
 		{Path: "test_1.2.3"},
 		{Path: "test_1.0.0"},
@@ -21,7 +23,7 @@ func TestCheckResource(t *testing.T) {
 	defer testServer.Close()
 
 	//No version given
-	versions, err := Check(CheckRequest{Resource: source})
+	versions, err := Check(ctx, CheckRequest{Resource: source})
 	if err != nil {
 		t.Fatal("check failed: ", err)
 	}
@@ -32,7 +34,7 @@ func TestCheckResource(t *testing.T) {
 	}
 
 	//version given
-	versions, err = Check(CheckRequest{
+	versions, err = Check(ctx, CheckRequest{
 		Resource: source,
 		Version:  Version{Path: "test_0.3.0"},
 	})
@@ -49,7 +51,7 @@ func TestCheckResource(t *testing.T) {
 	}
 
 	//No new version
-	versions, err = Check(CheckRequest{
+	versions, err = Check(ctx, CheckRequest{
 		Resource: source,
 		Version:  Version{Path: "test_1.2.3"},
 	})
@@ -71,7 +73,7 @@ type testObject struct {
 
 var testContainer = "container"
 
-func testServer(objects []testObject) (server *swifttest.SwiftServer, source Source, client *swift.Connection, err error) {
+func testServer(ctx context.Context, objects []testObject) (server *swifttest.SwiftServer, source Source, client *swift.Connection, err error) {
 	if server, err = swifttest.NewSwiftServer("localhost"); err != nil {
 		return
 	}
@@ -87,7 +89,7 @@ func testServer(objects []testObject) (server *swifttest.SwiftServer, source Sou
 		AuthUrl:  server.AuthURL,
 	}
 
-	if err = client.Authenticate(); err != nil {
+	if err = client.Authenticate(ctx); err != nil {
 		return
 	}
 
@@ -96,10 +98,10 @@ func testServer(objects []testObject) (server *swifttest.SwiftServer, source Sou
 		if o.Container != "" {
 			container = o.Container
 		}
-		if err = client.ContainerCreate(container, nil); err != nil {
+		if err = client.ContainerCreate(ctx, container, nil); err != nil {
 			return
 		}
-		if err = client.ObjectPutString(container, o.Path, o.Content, ""); err != nil {
+		if err = client.ObjectPutString(ctx, container, o.Path, o.Content, ""); err != nil {
 			return
 		}
 	}

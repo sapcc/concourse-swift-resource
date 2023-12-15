@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -8,8 +9,9 @@ import (
 )
 
 func TestIn(t *testing.T) {
+	ctx := context.TODO()
 	cacheToken = false
-	testServer, source, _, err := testServer([]testObject{
+	testServer, source, _, err := testServer(ctx, []testObject{
 		{Path: "test_1.2.3", Content: "foo"},
 	})
 	if err != nil {
@@ -22,7 +24,7 @@ func TestIn(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	response, err := In(InRequest{Resource: source, Version: Version{Path: "test_1.2.3"}}, dir)
+	response, err := In(ctx, InRequest{Resource: source, Version: Version{Path: "test_1.2.3"}}, dir)
 	if err != nil {
 		t.Fatal("check failed: ", err)
 	}
