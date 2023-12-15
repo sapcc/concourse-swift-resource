@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 
 	"github.com/ncw/swift"
 
@@ -51,7 +52,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	deleteAfter := request.Params.DeleteAfter
 	shouldDeleteAfter := deleteAfter != 0
 	if shouldDeleteAfter {
-		headers["X-Delete-After"] = fmt.Sprintf("%d", deleteAfter)
+		headers["X-Delete-After"] = strconv.FormatInt(deleteAfter, 10)
 	}
 
 	bytes := stat.Size()
@@ -78,7 +79,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 			},
 			{
 				Name:  "Size",
-				Value: fmt.Sprintf("%d", stat.Size()),
+				Value: strconv.FormatInt(stat.Size(), 10),
 			},
 		},
 	}
@@ -86,7 +87,7 @@ func Out(request OutRequest, sourceDir string) (*OutResponse, error) {
 	if shouldDeleteAfter {
 		response.Metadata = append(response.Metadata, Metadata{
 			Name:  "DeleteAfter",
-			Value: fmt.Sprintf("%d", deleteAfter),
+			Value: strconv.FormatInt(deleteAfter, 10),
 		})
 	}
 
