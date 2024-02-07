@@ -21,6 +21,7 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -116,7 +117,7 @@ func Out(ctx context.Context, request OutRequest, sourceDir string) (*OutRespons
 
 func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 	if request.Params.From == "" {
-		return "", fmt.Errorf("required parameter 'from' missing")
+		return "", errors.New("required parameter 'from' missing")
 	}
 
 	from, err := regexp.Compile(request.Params.From)
