@@ -15,7 +15,6 @@ binaries:
     installTo:   bin/
 
 golang:
-  enableVendoring: true
   setGoModVersion: true
 
 golangciLint:
@@ -23,13 +22,6 @@ golangciLint:
 
 githubWorkflow:
   ci:
-    enabled: true
-    ignorePaths: [ "**.md" ] # all Markdown files
-    postgres:
-      enabled: false
-  license:
-    enabled: true
-  securityChecks:
     enabled: true
 
 renovate:
