@@ -125,8 +125,8 @@ func prepareFileSource(request OutRequest, sourceDir string) (string, error) {
 		return "", fmt.Errorf("invalid regex in from: %w", err)
 	}
 
-	//if the from param contains a literal prefix containing slashes
-	//we move the search base to the deepest sub directory
+	// if the from param contains a literal prefix containing slashes
+	// we move the search base to the deepest sub directory
 	prefix, _ := from.LiteralPrefix()
 	dir := regexp.MustCompile("^.*/").FindString(prefix)
 	searchBase := filepath.Join(sourceDir, dir)

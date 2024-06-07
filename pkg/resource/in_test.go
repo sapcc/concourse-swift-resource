@@ -56,7 +56,7 @@ func TestIn(t *testing.T) {
 			{Name: "Last Modified", Value: ""},
 		},
 	}
-	//Clear out the Last modified metadata from response
+	// Clear out the Last modified metadata from response
 	for i, m := range response.Metadata {
 		if m.Name == "Last Modified" {
 			response.Metadata[i].Value = ""

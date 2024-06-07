@@ -41,7 +41,7 @@ func TestCheckResource(t *testing.T) {
 	}
 	defer testServer.Close()
 
-	//No version given
+	// No version given
 	versions, err := Check(ctx, CheckRequest{Resource: source})
 	if err != nil {
 		t.Fatal("check failed: ", err)
@@ -52,7 +52,7 @@ func TestCheckResource(t *testing.T) {
 		t.Fatalf("Expected %v, got %v", expected, versions)
 	}
 
-	//version given
+	// version given
 	versions, err = Check(ctx, CheckRequest{
 		Resource: source,
 		Version:  Version{Path: "test_0.3.0"},
@@ -69,7 +69,7 @@ func TestCheckResource(t *testing.T) {
 		t.Fatalf("Expected %v, got %v", expected, versions)
 	}
 
-	//No new version
+	// No new version
 	versions, err = Check(ctx, CheckRequest{
 		Resource: source,
 		Version:  Version{Path: "test_1.2.3"},
