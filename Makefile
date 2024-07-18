@@ -22,17 +22,18 @@ prepare-static-check: FORCE
 GO_BUILDFLAGS = -mod vendor
 GO_LDFLAGS =
 GO_TESTENV =
+GO_BUILDENV =
 
 build-all: build/check build/in build/out
 
 build/check: FORCE
-	go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/check ./cmd/check
+	@env $(GO_BUILDENV) go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/check ./cmd/check
 
 build/in: FORCE
-	go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/in ./cmd/in
+	@env $(GO_BUILDENV) go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/in ./cmd/in
 
 build/out: FORCE
-	go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/out ./cmd/out
+	@env $(GO_BUILDENV) go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/out ./cmd/out
 
 DESTDIR =
 ifeq ($(shell uname -s),Darwin)
@@ -108,6 +109,7 @@ clean: FORCE
 
 vars: FORCE
 	@printf "DESTDIR=$(DESTDIR)\n"
+	@printf "GO_BUILDENV=$(GO_BUILDENV)\n"
 	@printf "GO_BUILDFLAGS=$(GO_BUILDFLAGS)\n"
 	@printf "GO_COVERPKGS=$(GO_COVERPKGS)\n"
 	@printf "GO_LDFLAGS=$(GO_LDFLAGS)\n"
