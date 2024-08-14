@@ -1,6 +1,6 @@
 module github.com/sapcc/concourse-swift-resource
 
-go 1.22
+go 1.23
 
 require (
 	github.com/hashicorp/go-version v1.7.0
