@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime"
 	"net"
@@ -194,6 +193,7 @@ func fatalf(code int, codeStr string, errf string, a ...interface{}) {
 func (m metadata) setMetadata(a *action, resource string) {
 	for key, values := range a.req.Header {
 		key = http.CanonicalHeaderKey(key)
+		//nolint:staticcheck // strings.Title is broken in a way this test code doesn't care about
 		if metaHeaders[key] || strings.HasPrefix(key, "X-"+strings.Title(resource)+"-Meta-") {
 			if values[0] != "" || resource == "object" {
 				m.meta[key] = values
@@ -372,7 +372,7 @@ func (r containerResource) put(a *action) interface{} {
 	if format := a.req.URL.Query().Get("extract-archive"); format != "" {
 		_, _, objectName, _ := a.srv.parseURL(a.req.URL)
 
-		data, err := ioutil.ReadAll(a.req.Body)
+		data, err := io.ReadAll(a.req.Body)
 		if err != nil {
 			fatalf(400, "TODO", "read error")
 		}
@@ -457,12 +457,13 @@ func (r containerResource) put(a *action) interface{} {
 
 				if strings.HasPrefix(ks[1], "meta.") {
 					meta := strings.TrimLeft(ks[1], "meta.")
+					//nolint:staticcheck // strings.Title is broken in a way that this test code doesn't care about
 					obj.meta["X-Object-Meta-"+strings.Title(meta)] = []string{v}
 				}
 			}
 
 			sum := md5.New()
-			objData, err := ioutil.ReadAll(io.TeeReader(reader, sum))
+			objData, err := io.ReadAll(io.TeeReader(reader, sum))
 			if err != nil {
 				errArr := []string{fullPath, fmt.Sprintf("read error: %v", err)}
 				resp.Errors = append(resp.Errors, errArr)
@@ -726,7 +727,7 @@ func (objr objectResource) put(a *action) interface{} {
 	}
 	sum := md5.New()
 	// TODO avoid holding lock while reading data.
-	data, err := ioutil.ReadAll(io.TeeReader(a.req.Body, sum))
+	data, err := io.ReadAll(io.TeeReader(a.req.Body, sum))
 	if err != nil {
 		fatalf(400, "TODO", "read error")
 	}
@@ -1094,7 +1095,7 @@ func (srv *SwiftServer) resourceForURL(u *url.URL) (r resource) {
 	accountName, containerName, objectName, err := srv.parseURL(u)
 
 	if err != nil {
-		fatalf(404, "InvalidURI", err.Error())
+		fatalf(404, "InvalidURI", "%s", err.Error())
 	}
 
 	srv.RLock()
@@ -1217,7 +1218,7 @@ func (r rootResource) post(a *action) interface{} {
 
 func (r rootResource) delete(a *action) interface{} {
 	if a.req.URL.Query().Get("bulk-delete") == "1" {
-		data, err := ioutil.ReadAll(a.req.Body)
+		data, err := io.ReadAll(a.req.Body)
 		if err != nil {
 			fatalf(400, "Bad Request", "read error")
 		}
