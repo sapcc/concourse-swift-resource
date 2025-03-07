@@ -29,7 +29,7 @@ import (
 )
 
 func TestCheckResource(t *testing.T) {
-	ctx := context.TODO()
+	ctx := t.Context()
 	cacheToken = false
 	testServer, source, _, err := testServer(ctx, []testObject{
 		{Path: "test_0.3.0"},

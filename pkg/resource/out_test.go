@@ -20,7 +20,6 @@
 package resource
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,7 +27,7 @@ import (
 )
 
 func TestOut(t *testing.T) {
-	ctx := context.TODO()
+	ctx := t.Context()
 	cacheToken = false
 	testVersion := "test_1.2.4"
 	testServer, source, client, err := testServer(ctx, []testObject{})
@@ -37,11 +36,7 @@ func TestOut(t *testing.T) {
 	}
 	defer testServer.Close()
 
-	dir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("Failed to create source directory %s: %s", dir, err)
-	}
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, testVersion), []byte("foo"), 0644); err != nil {
 		t.Fatal("Failed to write test file ", err)
 	}

@@ -49,7 +49,7 @@ type Extraction struct {
 
 func Parse(filename string, pattern *regexp.Regexp) (Extraction, bool) {
 	matches := pattern.FindStringSubmatch(filename)
-	if matches == nil || len(matches) < 2 {
+	if len(matches) < 2 {
 		return Extraction{}, false
 	}
 	ver, err := version.NewVersion(matches[1])

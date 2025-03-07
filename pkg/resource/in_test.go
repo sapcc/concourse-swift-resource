@@ -20,7 +20,6 @@
 package resource
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,7 +27,7 @@ import (
 )
 
 func TestIn(t *testing.T) {
-	ctx := context.TODO()
+	ctx := t.Context()
 	cacheToken = false
 	testServer, source, _, err := testServer(ctx, []testObject{
 		{Path: "test_1.2.3", Content: "foo"},
@@ -37,11 +36,7 @@ func TestIn(t *testing.T) {
 		t.Fatal("Failed to setup swift mock ", err)
 	}
 	defer testServer.Close()
-	dir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("Failed to create test directory %s: %s", dir, err)
-	}
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	response, err := In(ctx, InRequest{Resource: source, Version: Version{Path: "test_1.2.3"}}, dir)
 	if err != nil {
