@@ -30,3 +30,12 @@ renovate:
   assignees:
     - majewsky
     - SuperSandro2000
+
+reuse:
+  annotations:
+    - paths:
+        - integration/out/file_0.1.0
+        - integration/out/file_0.2.0
+        - integration/resource.json.sample
+      SPDX-FileCopyrightText: 'SAP SE or an SAP affiliate company'
+      SPDX-License-Identifier: Apache-2.0
