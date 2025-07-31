@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Concourse resource for OpenStack Swift
 
 Versions objects in a Swift container, by pattern-matching filenames to identify
