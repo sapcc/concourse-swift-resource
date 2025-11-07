@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set -e
 set -o pipefail
 #ensure we are in the integration test directory
