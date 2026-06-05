@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.20.6-alpine3.18 as builder
+FROM golang:1.26.4-alpine3.23 AS builder
 
 RUN apk add --no-cache --no-progress git make
 
@@ -12,7 +12,7 @@ RUN make -C /src install PREFIX=/pkg GO_BUILDFLAGS='-mod vendor'
 
 ################################################################################
 
-FROM alpine:3.18
+FROM alpine:3.23
 
 # upgrade all installed packages to fix potential CVEs in advance
 RUN apk upgrade --no-cache --no-progress \
