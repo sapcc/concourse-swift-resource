@@ -12,7 +12,7 @@ RUN make -C /src install PREFIX=/pkg GO_BUILDFLAGS='-mod vendor'
 
 ################################################################################
 
-FROM alpine:3.23
+FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
 # upgrade all installed packages to fix potential CVEs in advance
 RUN apk upgrade --no-cache --no-progress \
